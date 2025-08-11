@@ -1,7 +1,5 @@
 from django.contrib import admin
 from django.urls import path, include
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from config.api_keys import APIKeyTestView
 
 urlpatterns = [
     # Админка
@@ -9,9 +7,6 @@ urlpatterns = [
     
     # API
     path('api/', include('users.urls')),
-    
-    # Защищённый API-эндпоинт с ключом
-    path('config/', APIKeyTestView.as_view(), name='secure-api'),
     
     # Документация API
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
