@@ -136,24 +136,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'                # Директория д�
 MEDIA_URL = '/media/'  # URL для медиа-файлов
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')          # Директория для хранения медиа-файлов
 
-# Внутренние IP-адреса для отладки
-if DEBUG:
-    INTERNAL_IPS = ['127.0.0.1']
-
 # Настройки пользовательской модели пользователя
 AUTH_USER_MODEL = 'users.CustomUser'
-
-# ===== Настройки DRF =====
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
 
 # ===== Настройки документации API =====
 SPECTACULAR_SETTINGS = {
@@ -164,60 +148,6 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
     'SCHEMA_PATH_PREFIX': '/api/',
 }
-
-# ===== JWT Настройки =====
-from datetime import timedelta
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,  
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-}
-
-# ===== CORS Настройки =====
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS', 
-    default='http://localhost:3000,http://127.0.0.1:3000'
-).split(',')
-
-# ===== OAuth Настройки =====
-OAUTH_PROVIDERS = {
-    'google': {
-        'client_id': config('GOOGLE_OAUTH_CLIENT_ID', default=''),
-        'client_secret': config('GOOGLE_OAUTH_CLIENT_SECRET', default=''),
-        'authorize_url': 'https://accounts.google.com/o/oauth2/auth',
-        'token_url': 'https://oauth2.googleapis.com/token',
-        'userinfo_url': 'https://www.googleapis.com/oauth2/v3/userinfo',
-        'scopes': ['openid', 'email', 'profile'],
-        'redirect_uri': config('GOOGLE_REDIRECT_URI', default='http://localhost:8000/oauth/google/callback/')
-    },
-    'yandex': {
-        'client_id': config('YANDEX_OAUTH_CLIENT_ID', default=''),
-        'client_secret': config('YANDEX_OAUTH_CLIENT_SECRET', default=''),
-        'authorize_url': 'https://oauth.yandex.ru/authorize',
-        'token_url': 'https://oauth.yandex.ru/token',
-        'userinfo_url': 'https://login.yandex.ru/info',
-        'scopes': ['login:email', 'login:info'],
-        'redirect_uri': config('YANDEX_REDIRECT_URI', default='http://localhost:8000/oauth/yandex/callback/')
-    }
-}
-
-# URL для перенаправления после успешной OAuth-аутентификации
-OAUTH_SUCCESS_REDIRECT_URL = config('OAUTH_SUCCESS_REDIRECT_URL', default='http://localhost:3000/login/success')
-OAUTH_FAILURE_REDIRECT_URL = config('OAUTH_FAILURE_REDIRECT_URL', default='http://localhost:3000/login/error')
-
-# ===== Настройки аутентификации =====
-AUTH_USER_MODEL = 'users.CustomUser'
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'authentication.oauth.backends.OAuthBackend',
-]
 
 # Настройки email 
 EMAIL_BACKEND = config('EMAIL_BACKEND')               # Используемый бекенд
