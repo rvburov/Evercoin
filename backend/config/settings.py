@@ -134,13 +134,13 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Настройки для статических файлов
-STATIC_URL = '/static/'                               # URL для статических файлов
-STATICFILES_DIRS = [BASE_DIR / 'static',]             # Директории со статическими файлами
-STATIC_ROOT = BASE_DIR / 'staticfiles'                # Директория для сбора статических файлов
+STATIC_URL = '/static/'                               
+STATICFILES_DIRS = [BASE_DIR / 'static',]             
+STATIC_ROOT = BASE_DIR / 'staticfiles'               
 
 # Настройки для медиа-файлов
-MEDIA_URL = '/media/'  # URL для медиа-файлов
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')          # Директория для хранения медиа-файлов
+MEDIA_URL = '/media/'  
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')          
 
 # Настройки пользовательской модели пользователя
 AUTH_USER_MODEL = 'users.CustomUser'
@@ -175,11 +175,10 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 
 # Социальные провайдеры
-SOCIALACCOUNT_STORE_TOKENS = True  # Сохранять токены в БД
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': config('GOOGLE_CLIENT_ID'),  # Без значения по умолчанию
+            'client_id': config('GOOGLE_CLIENT_ID'),  
             'secret': config('GOOGLE_SECRET'),
         },
         'SCOPE': ['profile', 'email'],
