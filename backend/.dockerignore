@@ -1,14 +1,55 @@
-# Django stuff:
-db.sqlite3
+# Игнорировать все файлы по умолчанию
+*
 
-# Environments
-env
+# Исключения - разрешенные директории и файлы
+!backend/
+!docker-compose.yml
+!docker-compose.prod.yml
+
+# Фильтрация содержимого backend
+backend/*
+!backend/config/
+!backend/authentication/ 
+!backend/users/
+!backend/utils/
+!backend/manage.py
+!backend/requirements.txt
+!backend/Dockerfile
+
+# Системные файлы
 .git
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Файлы окружения и секреты
 .env
+*.env
+secrets.json
 
-# Папки, создаваемые средой разработки
-.idea
-.vscode
+# Кэш и временные файлы
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.swp
+*.swo
+*.bak
 
-README.md
-Dockerfile
+# Базы данных и медиа
+*.sqlite3
+/media/
+/static/
+/staticfiles/
+
+# Тесты и окружения разработки
+/tests/
+/venv/
+
+# Файлы редакторов
+.idea/
+.vscode/
+
+# Docker-специфичные файлы
+docker-compose.override.yml
