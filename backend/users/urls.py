@@ -9,7 +9,6 @@ urlpatterns = [
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
 
     # Аутентификация и регистрация (Провайдеров)
-    path('auth/social/', include('dj_rest_auth.social.urls')), 
     path('auth/social/google/', views.GoogleLogin.as_view(), name='google_login'),
     path('auth/social/yandex/', views.YandexLogin.as_view(), name='yandex_login'),
 
