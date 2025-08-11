@@ -1,0 +1,72 @@
+# Файлы Python
+*.py[cod]  
+*.pyo
+*.pyd
+__pycache__/  
+.python-version
+
+# Файлы Django
+*.log  
+*.pot  
+db.sqlite3  
+local_settings.py  
+
+# Виртуальные окружения
+venv/
+.env/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Статические файлы
+/staticfiles/  
+/static/  
+/media/  
+
+# Файлы редакторов и IDE
+.idea/  
+.vscode/  
+*.swp  
+*.swo
+*.bak
+*~
+
+# Системные файлы
+.DS_Store  
+Thumbs.db  
+
+# Тестирование
+.coverage  
+htmlcov/  
+.pytest_cache/  
+/tests/  
+
+# Node.js (если используется)
+node_modules/
+npm-debug.log*
+
+# Базы данных
+*.db
+*.sqlite
+*.sqlite3
+
+# Celery
+celerybeat-schedule.*
+celerybeat.pid
+
+# Jupyter
+.ipynb_checkpoints
+
+# Логи
+logs/
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Файлы окружения
+.env
+*.env
+secrets.json
