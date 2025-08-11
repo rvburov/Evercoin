@@ -7,8 +7,8 @@ urlpatterns = [
     # Админка
     path('admin/', admin.site.urls),
     
-    # Пользователи
-    path('users/', include('users.urls')),
+    # API
+    path('api/', include('users.urls')),
     
     # Защищённый API-эндпоинт с ключом
     path('config/', APIKeyTestView.as_view(), name='secure-api'),
