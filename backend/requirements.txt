@@ -1,4 +1,4 @@
-pip install dj-rest-auth                       # Базовые функции
-pip install django-allauth                     # Для регистрации и соц. сетей (опционально)
-pip install djangorestframework-simplejwt      # Для JWT (опционально)
+dj-rest-auth                                   # Базовые функции
+django-allauth                                 # Для регистрации и соц. сетей (опционально)
+djangorestframework-simplejwt                  # Для JWT (опционально)
 drf-spectacular                                # Документация API 
