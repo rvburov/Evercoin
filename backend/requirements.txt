@@ -4,7 +4,7 @@ dj-database-url==2.0.0                      # Утилита для удобно
 djangorestframework==3.14.0                 # Фреймворк для создания REST API
 djangorestframework-simplejwt==5.3.0        # Реализация JWT-аутентификации для DRF
 dj-rest-auth==4.0.0                         # Набор утилит для аутентификации REST API
-django-allauth==0.58.2                      # Система управления пользователями и аутентификацией
+django-allauth==0.54.0                      # Система управления пользователями и аутентификацией (django-allauth==0.54.0 совместима с dj-rest-auth==4.0.0)
 django-cors-headers==4.3.1                  # Управление CORS-заголовками для кросс-доменных запросов
 drf-spectacular==0.27.1                     # Генератор документации OpenAPI для DRF
 psycopg2-binary==2.9.9                      # Драйвер для работы с PostgreSQL базой данных
