@@ -25,6 +25,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites', 
 ]
 
 # Локальные приложения проекта (созданные пользователем)
@@ -35,7 +36,12 @@ LOCAL_APPS = [
 # Сторонние приложения, установленные через pip
 THIRD_PARTY_APPS = [
     'rest_framework',
-    'rest_framework_simplejwt',
+    'rest_framework.authtoken', 
+    'dj_rest_auth',
+    'allauth',
+    'allauth.account', 
+    'allauth.socialaccount',  
+    'dj_rest_auth.registration',
 ]
 
 # Полный список установленных приложений
@@ -138,7 +144,9 @@ AUTH_USER_MODEL = 'users.CustomUser'
 # Настройка аутентификации для Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication', 
+        'rest_framework.authentication.TokenAuthentication',  
+        'rest_framework_simplejwt.authentication.JWTAuthentication', 
     ),
 }
 
@@ -159,6 +167,9 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
     'SCHEMA_PATH_PREFIX': '/api/',
 }
+
+# Отключение обязательной верификации email
+ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 # Настройки email 
 EMAIL_BACKEND = config('EMAIL_BACKEND')               # Используемый бекенд
