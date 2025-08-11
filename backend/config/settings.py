@@ -26,6 +26,8 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites', 
+    'corsheaders',
+    'drf_spectacular',
 ]
 
 # Локальные приложения проекта (созданные пользователем)
@@ -51,12 +53,12 @@ INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS + THIRD_PARTY_APPS
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 # Корневая конфигурация URL
@@ -144,15 +146,13 @@ AUTH_USER_MODEL = 'users.CustomUser'
 # Настройка аутентификации для Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication', 
-        'rest_framework.authentication.TokenAuthentication',  
-        'rest_framework_simplejwt.authentication.JWTAuthentication', 
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # Настройки для работы с JWT-токенами (опционально)
-from datetime import timedelta
-
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -160,15 +160,14 @@ SIMPLE_JWT = {
 
 # Настройки документации API
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Authentication API',
-    'DESCRIPTION': 'API для аутентификации пользователей',
+    'TITLE': 'User Authentication API',
+    'DESCRIPTION': 'API для управления пользователями и аутентификации',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    'COMPONENT_SPLIT_REQUEST': True,
-    'SCHEMA_PATH_PREFIX': '/api/',
 }
 
-# Отключение обязательной верификации email
+# Настройки allauth (Отключение обязательной верификации email)
+SITE_ID = 1
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 # Настройки email 
