@@ -26,8 +26,6 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites', 
-    'corsheaders',
-    'drf_spectacular',
 ]
 
 # Локальные приложения проекта (созданные пользователем)
@@ -46,6 +44,8 @@ THIRD_PARTY_APPS = [
     'allauth.socialaccount.providers.google'
     'allauth.socialaccount.providers.yandex'
     'dj_rest_auth.registration',
+    'corsheaders',
+    'drf_spectacular',
 ]
 
 # Полный список установленных приложений
@@ -168,29 +168,30 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-# Настройки allauth (Отключение обязательной верификации email)
+# Настройки allauth
 SITE_ID = 1
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'none'  
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
 
-# Настройте провайдеров
-SOCIALACCOUNT_STORE_TOKENS = True  # Сохранять токены провайдеров
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Отключить верификацию email
+# Социальные провайдеры
+SOCIALACCOUNT_STORE_TOKENS = True  # Сохранять токены в БД
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': 'ваш-google-client-id',
-            'secret': 'ваш-google-secret',
-            'key': ''
+            'client_id': config('GOOGLE_CLIENT_ID'),  # Без значения по умолчанию
+            'secret': config('GOOGLE_SECRET'),
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
     },
     'yandex': {
         'APP': {
-            'client_id': 'ваш-yandex-client-id',
-            'secret': 'ваш-yandex-secret',
-            'key': ''
-        }
+            'client_id': config('YANDEX_CLIENT_ID'),
+            'secret': config('YANDEX_SECRET'),
+        },
+        'SCOPE': ['login:email', 'login:info'],
+        'AUTH_PARAMS': {'access_type': 'online'},
     }
 }
 
