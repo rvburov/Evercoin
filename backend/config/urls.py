@@ -5,7 +5,7 @@ urlpatterns = [
     # Админка
     path('admin/', admin.site.urls),
     
-    # API
+    # Пользователь
     path('users/', include('users.urls')),
     
     # Документация API
