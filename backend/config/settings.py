@@ -42,7 +42,9 @@ THIRD_PARTY_APPS = [
     'dj_rest_auth',
     'allauth',
     'allauth.account', 
-    'allauth.socialaccount',  
+    'allauth.socialaccount', 
+    'allauth.socialaccount.providers.google'
+    'allauth.socialaccount.providers.yandex'
     'dj_rest_auth.registration',
 ]
 
@@ -169,6 +171,26 @@ SPECTACULAR_SETTINGS = {
 # Настройки allauth (Отключение обязательной верификации email)
 SITE_ID = 1
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# Настройте провайдеров
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': 'ваш-google-client-id',
+            'secret': 'ваш-google-secret',
+            'key': ''
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    },
+    'yandex': {
+        'APP': {
+            'client_id': 'ваш-yandex-client-id',
+            'secret': 'ваш-yandex-secret',
+            'key': ''
+        }
+    }
+}
 
 # Настройки email 
 EMAIL_BACKEND = config('EMAIL_BACKEND')               # Используемый бекенд
