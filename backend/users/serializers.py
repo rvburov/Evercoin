@@ -1,53 +1,33 @@
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.yandex.views import YandexAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialLoginView
-from .serializers import CustomUserSerializer, SocialLoginSerializer
+from rest_framework import serializers
+from dj_rest_auth.serializers import UserDetailsSerializer
+from dj_rest_auth.registration.serializers import RegisterSerializer
+from .models import CustomUser
 
-class AccountView(generics.RetrieveAPIView):
-    serializer_class = CustomUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+class CustomUserSerializer(UserDetailsSerializer):
+    class Meta(UserDetailsSerializer.Meta):
+        model = CustomUser
+        fields = ('pk', 'email', 'first_name', 'last_name')
+        read_only_fields = ('email',)
 
-    def get_object(self):
-        return self.request.user
+class CustomRegisterSerializer(RegisterSerializer):
+    email = serializers.EmailField(required=True)
+    password1 = serializers.CharField(write_only=True)
+    password2 = serializers.CharField(write_only=True)
 
-class AccountUpdateView(generics.UpdateAPIView):
-    serializer_class = CustomUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def get_cleaned_data(self):
+        return {
+            'email': self.validated_data.get('email', ''),
+            'password1': self.validated_data.get('password1', ''),
+        }
 
-    def get_object(self):
-        return self.request.user
+    def save(self, request):
+        cleaned_data = self.get_cleaned_data()
+        user = CustomUser.objects.create_user(
+            email=cleaned_data['email'],
+            password=cleaned_data['password1']
+        )
+        return user
 
-class AccountDeleteView(generics.DestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user
-
-    def destroy(self, request, *args, **kwargs):
-        user = self.get_object()
-        user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-    serializer_class = SocialLoginSerializer
-
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        kwargs['context'] = self.get_serializer_context()
-        return serializer_class(*args, **kwargs)
-
-class YandexLogin(SocialLoginView):
-    adapter_class = YandexAuth2Adapter
-    client_class = OAuth2Client
-    serializer_class = SocialLoginSerializer
-
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        kwargs['context'] = self.get_serializer_context()
-        return serializer_class(*args, **kwargs)
+class SocialLoginSerializer(serializers.Serializer):
+    access_token = serializers.CharField(required=True)
+    id_token = serializers.CharField(required=False)
