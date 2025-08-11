@@ -4,7 +4,7 @@ from . import views
 app_name = 'users'
 
 urlpatterns = [
-    # Аутентификация
+    # Аутентификация и регистрация
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
     path('auth/social/', include('dj_rest_auth.social.urls')), 
