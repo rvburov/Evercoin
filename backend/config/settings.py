@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from decouple import config  # Импорт библиотеки для управления переменными окружения
+from decouple import config 
 
 # Определяем базовую директорию проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +29,6 @@ DJANGO_APPS = [
 
 # Локальные приложения проекта (созданные пользователем)
 LOCAL_APPS = [
-    'api',
     'users',
 ]
 
@@ -37,9 +36,6 @@ LOCAL_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
-    'drf_spectacular',
 ]
 
 # Полный список установленных приложений
@@ -139,7 +135,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')          # Директория д�
 # Настройки пользовательской модели пользователя
 AUTH_USER_MODEL = 'users.CustomUser'
 
-# ===== Настройки документации API =====
+# Настройки документации API
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Authentication API',
     'DESCRIPTION': 'API для аутентификации пользователей',
