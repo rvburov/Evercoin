@@ -10,8 +10,8 @@ urlpatterns = [
     path('auth/social/', include('dj_rest_auth.social.urls')), 
 
     # Управление пользователями (REST API)
-    path('users/', views.AccountView.as_view(), name='account'),
-    path('users/register/', views.AccountRegisterView.as_view(), name='account_register'),
-    path('users/update/', views.AccountUpdateView.as_view(), name='account_update'),
-    path('users/delete/', views.AccountDeleteView.as_view(), name='account_delete'),
+    path('account/', views.AccountView.as_view(), name='account'),
+    path('account/register/', views.AccountRegisterView.as_view(), name='account_register'),
+    path('account/update/', views.AccountUpdateView.as_view(), name='account_update'),
+    path('account/delete/', views.AccountDeleteView.as_view(), name='account_delete'),
 ]
