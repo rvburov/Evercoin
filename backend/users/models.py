@@ -31,11 +31,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(
         verbose_name="Электронная почта",
+        max_length=254,
         unique=True
     )
     first_name = models.CharField(
         max_length=15,
-        verbose_name="Имя"
+        verbose_name="Имя",
+        blank=True,
+        validators=(UnicodeUsernameValidator())
     )
     image = models.ImageField(
         upload_to='users',
