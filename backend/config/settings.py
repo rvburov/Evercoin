@@ -173,6 +173,8 @@ SITE_ID = 1
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 # Настройте провайдеров
+SOCIALACCOUNT_STORE_TOKENS = True  # Сохранять токены провайдеров
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Отключить верификацию email
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
