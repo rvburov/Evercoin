@@ -135,6 +135,21 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')          # Директория д�
 # Настройки пользовательской модели пользователя
 AUTH_USER_MODEL = 'users.CustomUser'
 
+# Настройка аутентификации для Django REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+# Настройки для работы с JWT-токенами (опционально)
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
+
 # Настройки документации API
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Authentication API',
