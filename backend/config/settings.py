@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from decouple import config 
+from datetime import timedelta
 
 # Определяем базовую директорию проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,24 +29,25 @@ DJANGO_APPS = [
     'django.contrib.sites', 
 ]
 
-# Локальные приложения проекта (созданные пользователем)
-LOCAL_APPS = [
-    'users',
-]
-
 # Сторонние приложения, установленные через pip
 THIRD_PARTY_APPS = [
-    'rest_framework',
-    'rest_framework.authtoken', 
-    'dj_rest_auth',
     'allauth',
     'allauth.account', 
     'allauth.socialaccount', 
-    'allauth.socialaccount.providers.google'
-    'allauth.socialaccount.providers.yandex'
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.yandex',
+    'rest_framework',
+    'rest_framework.authtoken', 
+    'rest_framework_simplejwt',
+    'dj_rest_auth',
     'dj_rest_auth.registration',
     'corsheaders',
     'drf_spectacular',
+]
+
+# Локальные приложения проекта (созданные пользователем)
+LOCAL_APPS = [
+    'users',
 ]
 
 # Полный список установленных приложений
@@ -158,24 +160,31 @@ SPECTACULAR_SETTINGS = {
 
 # Настройки allauth
 SITE_ID = 1
-ACCOUNT_EMAIL_VERIFICATION = 'none'  
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer'
+}
 
 # Социальные провайдеры
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': config('GOOGLE_CLIENT_ID'),  
-            'secret': config('GOOGLE_SECRET'),
+            'client_id': config('GOOGLE_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_SECRET', default=''),
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
     },
     'yandex': {
         'APP': {
-            'client_id': config('YANDEX_CLIENT_ID'),
-            'secret': config('YANDEX_SECRET'),
+            'client_id': config('YANDEX_CLIENT_ID', default=''),
+            'secret': config('YANDEX_SECRET', default=''),
         },
         'SCOPE': ['login:email', 'login:info'],
         'AUTH_PARAMS': {'access_type': 'online'},
@@ -192,3 +201,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')   # Пароль SMTP
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER                  # Email отправителя
 SERVER_EMAIL = EMAIL_HOST_USER                        # Email для системных уведомлений
 EMAIL_ADMIN = EMAIL_HOST_USER                         # Email администратора
+
+# CORS настройки
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
+CORS_ALLOW_CREDENTIALS = True
