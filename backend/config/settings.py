@@ -191,6 +191,10 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
+# Настройки для восстановления пароля
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Evercoin] "
+PASSWORD_RESET_TIMEOUT = 86400 
+
 # Настройки email 
 EMAIL_BACKEND = config('EMAIL_BACKEND')               # Используемый бекенд
 EMAIL_HOST = config('EMAIL_HOST')                     # SMTP-сервер
