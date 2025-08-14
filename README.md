@@ -31,7 +31,7 @@ git clone https://github.com/rvburov/Evercoin.git
     pip install -r requirements.txt
 ```
 
-###  Запуск Django
+###  Запуск сервера Django
 
 1. Примените миграции для настройки базы данных
 ```bash
