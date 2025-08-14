@@ -144,7 +144,6 @@ Evercoin/                                        # Корневая директ
 ├── docker-compose.yml                           # Конфигурация для разработки (Django + PostgreSQL + Redis)
 ├── docker-compose.prod.yml                      # Конфигурация для продакшена (Gunicorn + Traefik)
 ├── .env.example                                 # Пример переменных окружения (SECRET_KEY, DB_URL)
-├── .env                                         # Окружение (SECRET_KEY, DB_URL)
 ├── .gitignore                                   # Игнорируемые файлы Git (venv, .pyc, .env)
 └── README.md                                    # Основная документация проекта (установка, настройка)                         
 ```
