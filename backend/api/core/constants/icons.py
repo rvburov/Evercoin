@@ -1,4 +1,4 @@
-# icons.py
+# project/backend/api/categories/core/constants/icons.py
 CATEGORY_ICONS = [
     "food",
     "transport",
