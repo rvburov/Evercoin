@@ -43,11 +43,16 @@ THIRD_PARTY_APPS = [
     'dj_rest_auth.registration',
     'corsheaders',
     'drf_spectacular',
+    'django_filters',
 ]
 
 # Локальные приложения проекта (созданные пользователем)
 LOCAL_APPS = [
-    'users',
+    'api.users',
+    'api.operations',
+    'api.wallets',
+    'api.categories',
+    'api.notifications',
 ]
 
 # Полный список установленных приложений
@@ -142,6 +147,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
 }
 
 # Настройки для работы с JWT-токенами (опционально)
