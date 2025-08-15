@@ -1,97 +1,75 @@
-from rest_framework import viewsets, status
+# backend/api/operations/views.py
+from rest_framework import generics, status, filters
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Sum, Count, Avg
-from django.utils import timezone
-from datetime import timedelta
-from .models import Operation
-from .serializers import (
-    OperationSerializer, 
-    OperationCreateSerializer,
-    OperationAnalyticsSerializer,
-    CategoryAnalyticsSerializer
-)
+from .models import Operation, RecurringOperation
+from .serializers import OperationSerializer, RecurringOperationSerializer
 from .filters import OperationFilter
-from wallets.models import Wallet
+from .tasks import process_recurring_operations
 
-
-class OperationViewSet(viewsets.ModelViewSet):
-    queryset = Operation.objects.all()
-    filter_backends = [DjangoFilterBackend]
+class OperationListCreateView(generics.ListCreateAPIView):
+    """Представление для списка и создания операций"""
+    serializer_class = OperationSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = OperationFilter
-
-    def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            return OperationCreateSerializer
-        return OperationSerializer
+    search_fields = ['name', 'description', 'amount']
+    ordering_fields = ['date', 'amount']
+    ordering = ['-date']
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user).select_related(
-            'wallet', 'category'
-        )
+        return Operation.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(detail=False, methods=['get'])
-    def analytics(self, request):
-        period = request.query_params.get('period', 'month')
-        wallet_id = request.query_params.get('wallet')
-        
-        queryset = self.filter_queryset(self.get_queryset())
-        
-        # Date range calculation
-        today = timezone.now().date()
-        if period == 'year':
-            start_date = today.replace(month=1, day=1)
-            end_date = today.replace(month=12, day=31)
-        elif period == 'month':
-            start_date = today.replace(day=1)
-            end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-        elif period == 'week':
-            start_date = today - timedelta(days=today.weekday())
-            end_date = start_date + timedelta(days=6)
-        else:  # day
-            start_date = end_date = today
-            
-        # Filter by date range
-        queryset = queryset.filter(date__date__range=[start_date, end_date])
-        
-        # Analytics data
-        analytics_data = {
-            'total_income': queryset.filter(type='income').aggregate(total=Sum('amount'))['total'] or 0,
-            'total_expense': queryset.filter(type='expense').aggregate(total=Sum('amount'))['total'] or 0,
-            'average_income': queryset.filter(type='income').aggregate(avg=Avg('amount'))['avg'] or 0,
-            'average_expense': queryset.filter(type='expense').aggregate(avg=Avg('amount'))['avg'] or 0,
-        }
-        
-        return Response(analytics_data)
+class OperationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Представление для деталей, обновления и удаления операций"""
+    serializer_class = OperationSerializer
 
-    @action(detail=False, methods=['get'])
-    def by_category(self, request):
+    def get_queryset(self):
+        return Operation.objects.filter(user=self.request.user)
+
+class OperationSummaryView(generics.GenericAPIView):
+    """Представление для сводной статистики по операциям"""
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = OperationFilter
+
+    def get_queryset(self):
+        return Operation.objects.filter(user=self.request.user)
+
+    def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         
-        category_stats = queryset.values(
-            'category__id', 'category__name', 'category__color', 'category__icon'
-        ).annotate(
-            total_amount=Sum('amount'),
-            operation_count=Count('id')
-        ).filter(category__isnull=False)
+        # Пример агрегации данных
+        total_income = queryset.filter(operation_type='income').aggregate(Sum('amount'))['amount__sum'] or 0
+        total_expense = queryset.filter(operation_type='expense').aggregate(Sum('amount'))['amount__sum'] or 0
         
-        serializer = CategoryAnalyticsSerializer(
-            [{
-                'category': {
-                    'id': stat['category__id'],
-                    'name': stat['category__name'],
-                    'color': stat['category__color'],
-                    'icon': stat['category__icon'],
-                },
-                'total_amount': stat['total_amount'],
-                'operation_count': stat['operation_count']
-            } for stat in category_stats],
-            many=True
+        return Response({
+            'total_income': total_income,
+            'total_expense': total_expense,
+            'balance': total_income - total_expense,
+        })
+
+class RecurringOperationListCreateView(generics.ListCreateAPIView):
+    """Представление для списка и создания повторяющихся операций"""
+    serializer_class = RecurringOperationSerializer
+
+    def get_queryset(self):
+        return RecurringOperation.objects.filter(base_operation__user=self.request.user)
+
+class RecurringOperationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Представление для деталей, обновления и удаления повторяющихся операций"""
+    serializer_class = RecurringOperationSerializer
+
+    def get_queryset(self):
+        return RecurringOperation.objects.filter(base_operation__user=self.request.user)
+
+class RecurringOperationProcessView(generics.GenericAPIView):
+    """Представление для ручного запуска обработки повторяющихся операций"""
+    
+    def post(self, request, *args, **kwargs):
+        process_recurring_operations.delay()
+        return Response(
+            {'status': 'started', 'message': 'Processing of recurring operations has been started'},
+            status=status.HTTP_202_ACCEPTED
         )
-        
-        return Response(serializer.data)
-
