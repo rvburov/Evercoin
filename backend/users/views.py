@@ -1,3 +1,4 @@
+# project/backend/api/notifications/views.py
 import requests
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
