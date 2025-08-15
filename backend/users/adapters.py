@@ -1,3 +1,4 @@
+# project/backend/api/notifications/adapters.py
 from allauth.account.adapter import DefaultAccountAdapter
 
 class CustomAccountAdapter(DefaultAccountAdapter):
