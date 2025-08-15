@@ -1,3 +1,4 @@
+# project/backend/api/notifications/urls.py
 from django.urls import path, include
 from . import views
 
