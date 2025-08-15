@@ -1,3 +1,4 @@
+# project/backend/api/categories/core/constants/colors.py
 COLORS = [
     {"id": "red", "hex": "#FF5252", "name": "Red", "name_ru": "Красный"},
     {"id": "pink", "hex": "#FF4081", "name": "Pink", "name_ru": "Розовый"},
