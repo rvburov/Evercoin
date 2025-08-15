@@ -1,4 +1,4 @@
-# project/backend/apps/core/constants/currencies.py
+# project/backend/api/core/constants/currencies.py
 
 CURRENCIES = [
     {
