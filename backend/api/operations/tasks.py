@@ -1,60 +1,43 @@
+# project/backend/api/operations/tasks.py
 from celery import shared_task
 from django.utils import timezone
+from .models import RecurringOperation, Operation
 from datetime import timedelta
-from .models import Operation
-
 
 @shared_task
-def create_repeated_operations():
-    today = timezone.now().date()
-    repeat_operations = Operation.objects.filter(
-        is_repeat=True,
-        repeat_end_date__gte=today
-    )
-    
-    for operation in repeat_operations:
-        last_operation = Operation.objects.filter(
-            user=operation.user,
-            title=operation.title,
-            amount=operation.amount,
-            type=operation.type,
-            wallet=operation.wallet,
-            category=operation.category,
-            is_repeat=False,
-            date__date__gte=today - timedelta(days=1)
-        ).first()
-        
-        if not last_operation:
-            next_date = today
-        else:
-            if operation.repeat_period == 'daily':
-                next_date = last_operation.date.date() + timedelta(days=1)
-            elif operation.repeat_period == '3days':
-                next_date = last_operation.date.date() + timedelta(days=3)
-            elif operation.repeat_period == 'weekly':
-                next_date = last_operation.date.date() + timedelta(weeks=1)
-            elif operation.repeat_period == 'biweekly':
-                next_date = last_operation.date.date() + timedelta(weeks=2)
-            elif operation.repeat_period == 'monthly':
-                next_date = last_operation.date.date() + timedelta(days=30)
-            elif operation.repeat_period == 'quarterly':
-                next_date = last_operation.date.date() + timedelta(days=90)
-            elif operation.repeat_period == 'biannually':
-                next_date = last_operation.date.date() + timedelta(days=180)
-            elif operation.repeat_period == 'annually':
-                next_date = last_operation.date.date() + timedelta(days=365)
-            else:
-                continue
-        
-        if next_date <= today:
-            Operation.objects.create(
-                user=operation.user,
-                title=operation.title,
-                amount=operation.amount,
-                type=operation.type,
-                wallet=operation.wallet,
-                category=operation.category,
-                comment=operation.comment,
-                is_repeat=False,
-                date=next_date
-            )
+def process_recurring_operations():
+    """Фоновая задача для обработки повторяющихся операций"""
+    now = timezone.now()
+    recurring_ops = RecurringOperation.objects.filter(
+        next_date__lte=now,
+        is_active=True
+    ).select_related('base_operation')
+
+    for op in recurring_ops:
+        # Создаем новую операцию на основе шаблона
+        Operation.objects.create(
+            user=op.base_operation.user,
+            name=op.base_operation.name,
+            amount=op.base_operation.amount,
+            operation_type=op.base_operation.operation_type,
+            category=op.base_operation.category,
+            wallet=op.base_operation.wallet,
+            date=now,
+            description=op.base_operation.description
+        )
+
+        # Обновляем следующую дату выполнения
+        if op.interval == 'daily':
+            op.next_date = now + timedelta(days=1)
+        elif op.interval == 'weekly':
+            op.next_date = now + timedelta(weeks=1)
+        elif op.interval == 'monthly':
+            op.next_date = now + timedelta(days=30)  # Упрощенная логика
+        elif op.interval == 'yearly':
+            op.next_date = now + timedelta(days=365)
+
+        # Проверяем дату окончания
+        if op.end_date and op.next_date > op.end_date:
+            op.is_active = False
+
+        op.save()
