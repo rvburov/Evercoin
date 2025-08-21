@@ -1,61 +1,76 @@
-# project/backend/api/operations/models.py
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
-from users.models import User
-from wallets.models import Wallet
-from categories.models import Category
+from decimal import Decimal
+
+User = get_user_model()
 
 class Operation(models.Model):
-    """Модель финансовой операции (доход/расход/перевод)"""
-    OPERATION_TYPES = (
-        ('income', 'Доход'),
-        ('expense', 'Расход'),
-        ('transfer', 'Перевод'),
-    )
-
+    INCOME = 'income'
+    EXPENSE = 'expense'
+    TRANSFER = 'transfer'
+    
+    OPERATION_TYPES = [
+        (INCOME, 'Доход'),
+        (EXPENSE, 'Расход'),
+        (TRANSFER, 'Перевод'),
+    ]
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='operations')
-    name = models.CharField(max_length=255, verbose_name='Название операции')
+    wallet = models.ForeignKey('wallets.Wallet', on_delete=models.CASCADE, related_name='operations')
+    category = models.ForeignKey('categories.Category', on_delete=models.SET_NULL, null=True, blank=True, related_name='operations')
+    
     amount = models.DecimalField(
-        max_digits=12,
+        max_digits=12, 
         decimal_places=2,
-        validators=[MinValueValidator(0.01)],
-        verbose_name='Сумма'
+        validators=[MinValueValidator(Decimal('0.01'))]
     )
-    operation_type = models.CharField(max_length=10, choices=OPERATION_TYPES, verbose_name='Тип операции')
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
-    wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name='operations')
-    date = models.DateTimeField(verbose_name='Дата операции')
-    description = models.TextField(blank=True, verbose_name='Комментарий')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    operation_type = models.CharField(max_length=10, choices=OPERATION_TYPES)
+    date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-date']
-        indexes = [
-            models.Index(fields=['-date']),
-            models.Index(fields=['operation_type']),
-        ]
-
-    def __str__(self):
-        return f"{self.name} - {self.amount}"
-
-class RecurringOperation(models.Model):
-    """Модель для повторяющихся операций с настройкой периодичности"""
-    INTERVAL_CHOICES = (
-        ('daily', 'Ежедневно'),
-        ('weekly', 'Еженедельно'),
-        ('monthly', 'Ежемесячно'),
-        ('yearly', 'Ежегодно'),
+    
+    # Для переводов
+    transfer_to_wallet = models.ForeignKey(
+        'wallets.Wallet', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='transfer_operations'
     )
-
-    base_operation = models.OneToOneField(Operation, on_delete=models.CASCADE, related_name='recurring')
-    next_date = models.DateTimeField(verbose_name='Следующая дата выполнения')
-    interval = models.CharField(max_length=10, choices=INTERVAL_CHOICES, verbose_name='Интервал')
-    is_active = models.BooleanField(default=True, verbose_name='Активна')
-    end_date = models.DateTimeField(null=True, blank=True, verbose_name='Дата окончания')
-
+    
     class Meta:
-        ordering = ['next_date']
-
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'date']),
+            models.Index(fields=['user', 'operation_type']),
+            models.Index(fields=['user', 'wallet']),
+            models.Index(fields=['user', 'category']),
+        ]
+    
     def __str__(self):
-        return f"Повторяющаяся: {self.base_operation.name}"
+        return f"{self.title} - {self.amount} ({self.operation_type})"
+    
+    def save(self, *args, **kwargs):
+        # Обновляем баланс кошелька при создании/обновлении операции
+        if not self.pk:
+            old_amount = Decimal('0')
+        else:
+            old_operation = Operation.objects.get(pk=self.pk)
+            old_amount = old_operation.amount
+        
+        super().save(*args, **kwargs)
+        
+        # Обновляем баланс кошелька
+        if self.operation_type == self.INCOME:
+            self.wallet.balance += (self.amount - old_amount)
+        elif self.operation_type == self.EXPENSE:
+            self.wallet.balance -= (self.amount - old_amount)
+        elif self.operation_type == self.TRANSFER and self.transfer_to_wallet:
+            self.wallet.balance -= (self.amount - old_amount)
+            self.transfer_to_wallet.balance += (self.amount - old_amount)
+            self.transfer_to_wallet.save()
+        
+        self.wallet.save()
