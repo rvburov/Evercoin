@@ -1,94 +1,62 @@
 # project/backend/api/categories/models.py
 from django.db import models
-from django.utils.translation import gettext_lazy as _
-from users.models import User
-from api.core.constants import icons, colors
+from django.contrib.auth import get_user_model
+from django.core.validators import MinLengthValidator
+
+User = get_user_model()
 
 class Category(models.Model):
-    """
-    Модель категории для операций (доходов/расходов).
-    Содержит информацию о типе, названии и визуальном оформлении категории.
-    """
-    
-    # Типы категорий
     INCOME = 'income'
     EXPENSE = 'expense'
-    TYPE_CHOICES = (
-        (INCOME, _('Доход')),
-        (EXPENSE, _('Расход')),
-    )
-
+    
+    OPERATION_TYPES = [
+        (INCOME, 'Доход'),
+        (EXPENSE, 'Расход'),
+    ]
+    
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
+        User, 
+        on_delete=models.CASCADE, 
         related_name='categories',
-        verbose_name=_('Пользователь')
+        verbose_name='Пользователь'
     )
     name = models.CharField(
-        max_length=100,
-        verbose_name=_('Название категории'),
-        help_text=_('Например: Продукты, Транспорт, Зарплата')
+        max_length=100, 
+        validators=[MinLengthValidator(2)],
+        verbose_name='Название категории'
     )
-    type = models.CharField(
-        max_length=10,
-        choices=TYPE_CHOICES,
-        verbose_name=_('Тип категории')
+    operation_type = models.CharField(
+        max_length=10, 
+        choices=OPERATION_TYPES,
+        verbose_name='Тип операции'
     )
     icon = models.CharField(
         max_length=50,
-        default='category',
-        verbose_name=_('Иконка'),
-        help_text=_('Код иконки из доступного набора')
+        verbose_name='Иконка'
     )
     color = models.CharField(
         max_length=7,
-        default=colors.DEFAULT_CATEGORY_COLOR,
-        verbose_name=_('Цвет'),
-        help_text=_('HEX-код цвета, например #FF5733')
+        verbose_name='Цвет',
+        help_text='HEX код цвета (например, #FF5733)'
     )
-    parent = models.ForeignKey(
-        'self',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='children',
-        verbose_name=_('Родительская категория')
-    )
-    is_system = models.BooleanField(
-        default=False,
-        verbose_name=_('Системная категория'),
-        help_text=_('Системные категории нельзя удалять или изменять')
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+    
     class Meta:
-        verbose_name = _('Категория')
-        verbose_name_plural = _('Категории')
-        ordering = ['type', 'name']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'name', 'type'],
-                name='unique_category_name_per_user_and_type'
-            )
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
+        ordering = ['operation_type', 'name']
+        unique_together = ['user', 'name', 'operation_type']
+        indexes = [
+            models.Index(fields=['user', 'operation_type']),
+            models.Index(fields=['user', 'name']),
         ]
-
+    
     def __str__(self):
-        return f"{self.get_type_display()}: {self.name}"
-
-    def save(self, *args, **kwargs):
-        """При сохранении проверяем, что родительская категория того же типа"""
-        if self.parent and self.parent.type != self.type:
-            raise ValueError(
-                "Родительская категория должна быть того же типа"
-            )
-        super().save(*args, **kwargs)
-
+        return f"{self.name} ({self.get_operation_type_display()})"
+    
     def delete(self, *args, **kwargs):
-        """Запрещаем удаление системных категорий"""
-        if self.is_system:
-            raise models.ProtectedError(
-                "Нельзя удалить системную категорию",
-                self
-            )
+        # При удалении категории удаляем все связанные операции
+        from operations.models import Operation
+        Operation.objects.filter(category=self).delete()
         super().delete(*args, **kwargs)
