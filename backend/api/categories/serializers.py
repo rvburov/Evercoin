@@ -1,71 +1,76 @@
 # project/backend/api/categories/serializers.py
 from rest_framework import serializers
 from .models import Category
-from api.core.constants import icons, colors
+from core.constants.icons import CATEGORY_ICONS
+from core.constants.colors import CATEGORY_COLORS
 
 class CategorySerializer(serializers.ModelSerializer):
-    """
-    Основной сериализатор для категорий.
-    Включает все поля и вложенные дочерние категории.
-    """
-    available_icons = serializers.SerializerMethodField()
-    available_colors = serializers.SerializerMethodField()
-    children = serializers.SerializerMethodField()
-
+    operation_type_display = serializers.CharField(source='get_operation_type_display', read_only=True)
+    
     class Meta:
         model = Category
         fields = [
-            'id', 'name', 'type', 'icon', 'color',
-            'parent', 'is_system', 'created_at',
-            'available_icons', 'available_colors', 'children'
+            'id', 'name', 'operation_type', 'operation_type_display',
+            'icon', 'color', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['is_system', 'created_at']
-
-    def get_available_icons(self, obj):
-        """Возвращает список доступных иконок для фронтенда"""
-        return icons.CATEGORY_ICONS
-
-    def get_available_colors(self, obj):
-        """Возвращает список доступных цветов для фронтенда"""
-        return colors.CATEGORY_COLORS
-
-    def get_children(self, obj):
-        """Рекурсивно возвращает дочерние категории"""
-        children = obj.children.all()
-        serializer = self.__class__(children, many=True)
-        return serializer.data
-
-    def validate(self, data):
-        """Дополнительная валидация данных категории"""
-        if 'parent' in data and data.get('parent'):
-            if data['parent'].type != data.get('type', self.instance.type if self.instance else None):
+        read_only_fields = ['created_at', 'updated_at']
+    
+    def validate_name(self, value):
+        """Проверка уникальности названия категории для пользователя"""
+        user = self.context['request'].user
+        operation_type = self.initial_data.get('operation_type')
+        
+        if self.instance:
+            # При обновлении проверяем, кроме текущей категории
+            if Category.objects.filter(
+                user=user, 
+                name=value, 
+                operation_type=operation_type
+            ).exclude(pk=self.instance.pk).exists():
                 raise serializers.ValidationError(
-                    {'parent': 'Родительская категория должна быть того же типа'}
+                    'Категория с таким названием и типом уже существует'
                 )
-        return data
+        else:
+            # При создании
+            if Category.objects.filter(
+                user=user, 
+                name=value, 
+                operation_type=operation_type
+            ).exists():
+                raise serializers.ValidationError(
+                    'Категория с таким названием и типом уже существует'
+                )
+        
+        return value
+    
+    def validate_color(self, value):
+        """Проверка формата цвета"""
+        if not value.startswith('#') or len(value) != 7:
+            raise serializers.ValidationError('Неверный формат цвета. Используйте HEX формат (#RRGGBB)')
+        return value
 
-class SimpleCategorySerializer(serializers.ModelSerializer):
-    """
-    Упрощенный сериализатор для использования в других моделях.
-    Содержит только основные поля.
-    """
+class CategoryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'type', 'icon', 'color']
-        read_only_fields = fields
+        fields = ['name', 'operation_type', 'icon', 'color']
+    
+    def validate_icon(self, value):
+        """Проверка доступности иконки"""
+        available_icons = [icon[0] for icon in CATEGORY_ICONS]
+        if value not in available_icons:
+            raise serializers.ValidationError('Выбранная иконка недоступна')
+        return value
+    
+    def validate_color(self, value):
+        """Проверка доступности цвета"""
+        available_colors = [color[0] for color in CATEGORY_COLORS]
+        if value not in available_colors:
+            raise serializers.ValidationError('Выбранный цвет недоступен')
+        return value
 
-class CategoryTreeSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для древовидного представления категорий.
-    """
-    children = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Category
-        fields = ['id', 'name', 'type', 'icon', 'color', 'children']
-
-    def get_children(self, obj):
-        """Рекурсивно возвращает дочерние категории"""
-        children = obj.children.all()
-        serializer = self.__class__(children, many=True)
-        return serializer.data
+class CategoryWithStatsSerializer(CategorySerializer):
+    operation_count = serializers.IntegerField(read_only=True)
+    total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    
+    class Meta(CategorySerializer.Meta):
+        fields = CategorySerializer.Meta.fields + ['operation_count', 'total_amount']
