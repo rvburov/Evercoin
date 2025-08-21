@@ -1,20 +1,24 @@
 # project/backend/api/operations/admin.py
 from django.contrib import admin
-from .models import Operation, RecurringOperation
+from .models import Operation
 
 @admin.register(Operation)
 class OperationAdmin(admin.ModelAdmin):
-    """Админка для операций с фильтрацией по типам и датам"""
-    list_display = ('name', 'amount', 'operation_type', 'category', 'wallet', 'date')
-    list_filter = ('operation_type', 'date', 'category')
-    search_fields = ('name', 'description')
+    list_display = ['title', 'amount', 'operation_type', 'user', 'wallet', 'date']
+    list_filter = ['operation_type', 'date', 'wallet']
+    search_fields = ['title', 'description', 'user__email']
+    readonly_fields = ['created_at', 'updated_at']
     date_hierarchy = 'date'
-    ordering = ('-date',)
-    raw_id_fields = ('wallet', 'category')
-
-@admin.register(RecurringOperation)
-class RecurringOperationAdmin(admin.ModelAdmin):
-    """Админка для повторяющихся операций с фильтрацией по периодичности"""
-    list_display = ('base_operation', 'next_date', 'interval')
-    list_filter = ('interval',)
-    search_fields = ('base_operation__name',)
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('user', 'wallet', 'category', 'transfer_to_wallet')
+        }),
+        ('Детали операции', {
+            'fields': ('amount', 'title', 'description', 'operation_type', 'date')
+        }),
+        ('Системная информация', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
