@@ -1,21 +1,24 @@
 # project/backend/api/operations/validators.py
-from django.core.exceptions import ValidationError
-from wallets.models import Wallet
 
-def validate_wallet_balance(wallet_id, amount, operation_type):
-    """Проверка достаточности средств на счете для расходной операции"""
-    if operation_type != 'expense':
-        return
+from rest_framework import serializers
+from datetime import datetime, timedelta
+from django.utils import timezone
+
+def validate_date_range(start_date, end_date):
+    """Валидация диапазона дат"""
+    if start_date and end_date and start_date > end_date:
+        raise serializers.ValidationError("Дата начала не может быть позже даты окончания")
     
-    wallet = Wallet.objects.get(pk=wallet_id)
-    if wallet.balance < amount:
-        raise ValidationError(
-            f'Недостаточно средств на счете. Доступно: {wallet.balance}'
-        )
+    # Максимальный диапазон - 5 лет
+    if start_date and end_date and (end_date - start_date).days > 1825:
+        raise serializers.ValidationError("Максимальный диапазон - 5 лет")
 
-def validate_recurring_dates(start_date, end_date):
-    """Проверка корректности дат для повторяющейся операции"""
-    if end_date and end_date <= start_date:
-        raise ValidationError(
-            'Дата окончания должна быть позже даты начала'
-        )
+def validate_operation_amount(amount, operation_type, wallet_balance):
+    """Валидация суммы операции"""
+    if amount <= 0:
+        raise serializers.ValidationError("Сумма должна быть положительной")
+    
+    if operation_type == 'expense' and amount > wallet_balance:
+        raise serializers.ValidationError("Недостаточно средств на счете")
+    
+    return amount
