@@ -26,22 +26,12 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites', 
 ]
 
 # Сторонние приложения, установленные через pip
 THIRD_PARTY_APPS = [
-    'allauth',
-    'allauth.account', 
-    'allauth.socialaccount', 
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.yandex',
     'rest_framework',
-    'rest_framework.authtoken', 
     'rest_framework_simplejwt',
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
-    'corsheaders',
     'drf_spectacular',
     'django_filters',
 ]
@@ -52,7 +42,6 @@ LOCAL_APPS = [
     'api.operations',
     'api.wallets',
     'api.categories',
-    'api.notifications',
 ]
 
 # Полный список установленных приложений
@@ -62,7 +51,6 @@ INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS + THIRD_PARTY_APPS
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -146,74 +134,34 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_FILTER_BACKENDS': (
-        'django_filters.rest_framework.DjangoFilterBackend',
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
     ),
 }
 
 # Настройки для работы с JWT-токенами (опционально)
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 # Настройки документации API
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'User Authentication API',
-    'DESCRIPTION': 'API для управления пользователями и аутентификации',
+    'TITLE': 'API Evercoin',
+    'DESCRIPTION': 'API для Evercoin',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-# Настройки allauth
-SITE_ID = 1
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
-REST_AUTH_REGISTER_SERIALIZERS = {
-    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer'
-}
-
-# Социальные провайдеры
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'APP': {
-            'client_id': config('GOOGLE_CLIENT_ID', default=''),
-            'secret': config('GOOGLE_SECRET', default=''),
-        },
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
-    },
-    'yandex': {
-        'APP': {
-            'client_id': config('YANDEX_CLIENT_ID', default=''),
-            'secret': config('YANDEX_SECRET', default=''),
-        },
-        'SCOPE': ['login:email', 'login:info'],
-        'AUTH_PARAMS': {'access_type': 'online'},
-    }
-}
-
-# Настройки для восстановления пароля
-ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Evercoin] "
-PASSWORD_RESET_TIMEOUT = 86400 
-
 # Настройки email 
-EMAIL_BACKEND = config('EMAIL_BACKEND')               # Используемый бекенд
-EMAIL_HOST = config('EMAIL_HOST')                     # SMTP-сервер
-EMAIL_PORT = config('EMAIL_PORT', cast=int)           # Порт для SMTP
-EMAIL_USE_SSL = config('EMAIL_USE_SSL', cast=bool)    # Использование SSL
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')           # Логин SMTP
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')   # Пароль SMTP
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER                  # Email отправителя
-SERVER_EMAIL = EMAIL_HOST_USER                        # Email для системных уведомлений
-EMAIL_ADMIN = EMAIL_HOST_USER                         # Email администратора
-
-# CORS настройки
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
-CORS_ALLOW_CREDENTIALS = True
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Для разработки
+EMAIL_HOST = config('EMAIL_HOST')                                 # SMTP-сервер
+EMAIL_PORT = config('EMAIL_PORT', cast=int)                       # Порт для SMTP
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', cast=bool)                # Использование SSL
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')                       # Логин SMTP
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')               # Пароль SMTP
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER                              # Email отправителя
+SERVER_EMAIL = EMAIL_HOST_USER                                    # Email для системных уведомлений
+EMAIL_ADMIN = EMAIL_HOST_USER                                     # Email администратора
