@@ -1,13 +1,16 @@
-# project/backend/api/notifications/urls.py
-from django.urls import path
-from .views import (
-    WalletListCreateView,
-    WalletDetailView,
-    transfer_funds
-)
+# evercoin/backend/api/wallets/urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import WalletViewSet, WalletTransferViewSet, WalletConstantsViewSet
+
+router = DefaultRouter()
+router.register(r'wallets', WalletViewSet, basename='wallet')
+router.register(r'transfers', WalletTransferViewSet, basename='wallet-transfer')
+router.register(r'constants', WalletConstantsViewSet, basename='wallet-constants')
 
 urlpatterns = [
-    path('wallets/', WalletListCreateView.as_view(), name='wallet-list'),
-    path('wallets/<int:pk>/', WalletDetailView.as_view(), name='wallet-detail'),
-    path('wallets/transfer/', transfer_funds, name='wallet-transfer'),
+    path('', include(router.urls)),
+    
+    # Дополнительные endpoints
+    path('wallets/summary/', WalletViewSet.as_view({'get': 'summary'}), name='wallet-summary'),
 ]
