@@ -1,37 +1,36 @@
-# project/backend/api/categories/filters.py
+# evercoin/backend/api/categories/filters.py
 from rest_framework import serializers
-from django.core.validators import validate_slug
-import re
 
-def validate_category_name(value):
-    """
-    Валидация названия категории
-    - Минимум 2 символа
-    - Максимум 100 символов
-    - Разрешены буквы, цифры, пробелы и некоторые спецсимволы
-    """
-    if len(value) < 2:
-        raise serializers.ValidationError('Название категории должно содержать минимум 2 символа')
+def validate_category_name_uniqueness(user, name, category_type, exclude_pk=None):
+    """Проверка уникальности названия категории для пользователя и типа"""
+    queryset = user.categories.filter(type=category_type)
+    if exclude_pk:
+        queryset = queryset.exclude(pk=exclude_pk)
     
-    if len(value) > 100:
-        raise serializers.ValidationError('Название категории не должно превышать 100 символов')
-    
-    # Проверка на допустимые символы
-    if not re.match(r'^[a-zA-Zа-яА-Я0-9\s\-_\.\(\)]+$', value):
-        raise serializers.ValidationError(
-            'Название категории может содержать только буквы, цифры, пробелы и символы -_.()'
-        )
-    
+    if queryset.filter(name=name).exists():
+        raise serializers.ValidationError("Категория с таким названием и типом уже существует")
+    return name
+
+def validate_category_name_length(value):
+    """Проверка длины названия категории"""
+    if len(value) > 255:
+        raise serializers.ValidationError("Название категории не может превышать 255 символов")
     return value
 
-def validate_hex_color(value):
-    """Валидация HEX цвета"""
-    if not value.startswith('#') or len(value) != 7:
-        raise serializers.ValidationError('Неверный формат цвета. Используйте HEX формат (#RRGGBB)')
+def validate_icon(value):
+    """Проверка допустимости иконки"""
+    from api.core.constants.icons import CATEGORY_ICONS
+    valid_icons = [icon[0] for icon in CATEGORY_ICONS]
     
-    # Проверка что все символы после # являются hex символами
-    hex_part = value[1:]
-    if not all(c in '0123456789ABCDEFabcdef' for c in hex_part):
-        raise serializers.ValidationError('Неверный HEX код цвета')
+    if value not in valid_icons:
+        raise serializers.ValidationError("Недопустимая иконка")
+    return value
+
+def validate_color(value):
+    """Проверка допустимости цвета"""
+    from api.core.constants.colors import COLORS
+    valid_colors = [color[0] for color in COLORS]
     
+    if value not in valid_colors:
+        raise serializers.ValidationError("Недопустимый цвет")
     return value
