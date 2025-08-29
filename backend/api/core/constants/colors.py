@@ -1,5 +1,5 @@
-# project/backend/api/categories/core/constants/colors.py
-CATEGORY_COLORS = [
+# evercoin/backend/api/categories/core/constants/colors.py
+COLORS = [
     ('#FF6B6B', 'Красный'),
     ('#4ECDC4', 'Бирюзовый'),
     ('#45B7D1', 'Голубой'),
