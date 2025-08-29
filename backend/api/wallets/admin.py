@@ -1,30 +1,41 @@
-# project/backend/api/notifications/admin.py
+# evercoin/backend/api/wallets/admin.py
 from django.contrib import admin
-from .models import Wallet
+from .models import Wallet, WalletTransfer
 
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
-    """Настройки админ-панели для модели Wallet"""
-    list_display = (
-        'name', 'user', 'balance', 
-        'currency', 'is_default', 'exclude_from_total'
-    )
-    list_filter = ('currency', 'is_default', 'exclude_from_total')
-    search_fields = ('name', 'user__email')
-    readonly_fields = ('created_at', 'updated_at')
+    list_display = ['user', 'name', 'balance', 'currency', 'is_default', 'exclude_from_total', 'created_at']
+    list_filter = ['is_default', 'exclude_from_total', 'currency', 'created_at']
+    search_fields = ['name', 'user__email']
+    readonly_fields = ['created_at', 'updated_at']
+    
     fieldsets = (
-        (None, {
+        ('Основная информация', {
             'fields': ('user', 'name', 'balance', 'currency')
         }),
-        ('Настройки отображения', {
-            'fields': ('icon', 'color', 'is_default', 'exclude_from_total')
+        ('Внешний вид', {
+            'fields': ('icon', 'color')
+        }),
+        ('Настройки', {
+            'fields': ('is_default', 'exclude_from_total')
         }),
         ('Даты', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
+            'fields': ('created_at', 'updated_at')
         }),
     )
 
-    def get_queryset(self, request):
-        """Оптимизация запросов к БД"""
-        return super().get_queryset(request).select_related('user')
+@admin.register(WalletTransfer)
+class WalletTransferAdmin(admin.ModelAdmin):
+    list_display = ['user', 'from_wallet', 'to_wallet', 'amount', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['from_wallet__name', 'to_wallet__name', 'user__email']
+    readonly_fields = ['created_at']
+    
+    fieldsets = (
+        ('Информация о переводе', {
+            'fields': ('user', 'from_wallet', 'to_wallet', 'amount', 'description')
+        }),
+        ('Дата', {
+            'fields': ('created_at',)
+        }),
+    )
