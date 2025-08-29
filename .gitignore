@@ -1,17 +1,17 @@
-# Файлы Python
-*.py[cod]  
+# ===== PYTHON =====
+*.py[cod]
 *.pyo
 *.pyd
-__pycache__/  
+__pycache__/
 .python-version
 
-# Файлы Django
-*.log  
-*.pot  
-db.sqlite3  
-local_settings.py  
+# ===== DJANGO =====
+*.log
+*.pot
+db.sqlite3
+local_settings.py
 
-# Виртуальные окружения
+# ===== ВИРТУАЛЬНЫЕ ОКРУЖЕНИЯ =====
 venv/
 .env/
 env/
@@ -20,53 +20,50 @@ ENV/
 env.bak/
 venv.bak/
 
-# Статические файлы
-/staticfiles/  
-/static/  
-/media/  
+# ===== СТАТИЧЕСКИЕ ФАЙЛЫ =====
+/staticfiles/
+/static/
+/media/
 
-# Файлы редакторов и IDE
-.idea/  
-.vscode/  
-*.swp  
+# ===== РЕДАКТОРЫ И IDE =====
+.idea/
+.vscode/
+*.swp
 *.swo
 *.bak
 *~
 
-# Системные файлы
-.DS_Store  
-Thumbs.db  
+# ===== СИСТЕМНЫЕ ФАЙЛЫ =====
+.DS_Store
+Thumbs.db
 
-# Тестирование
-.coverage  
-htmlcov/  
-.pytest_cache/  
-/tests/  
+# ===== ТЕСТИРОВАНИЕ =====
+.coverage
+htmlcov/
+.pytest_cache/
+/tests/
 
-# Node.js (если используется)
+# ===== NODE.JS =====
 node_modules/
 npm-debug.log*
 
-# Базы данных
+# ===== БАЗЫ ДАННЫХ =====
 *.db
 *.sqlite
 *.sqlite3
 
-# Celery
+# ===== CELERY =====
 celerybeat-schedule.*
 celerybeat.pid
 
-# Jupyter
+# ===== JUPYTER =====
 .ipynb_checkpoints
 
-# Логи
+# ===== ЛОГИ =====
 logs/
 *.log
 
-# Docker
-docker-compose.override.yml
-
-# Файлы окружения
+# ===== ФАЙЛЫ ОКРУЖЕНИЯ =====
 .env
 *.env
 secrets.json
