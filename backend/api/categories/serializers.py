@@ -1,76 +1,154 @@
-# project/backend/api/categories/serializers.py
+# evercoin/backend/api/categories/serializers.py
 from rest_framework import serializers
-from .models import Category
-from core.constants.icons import CATEGORY_ICONS
-from core.constants.colors import CATEGORY_COLORS
+from .models import Category, CategoryBudget
+from api.operations.models import Operation
+from django.db.models import Sum, Count
+from django.utils import timezone
+from datetime import timedelta
 
 class CategorySerializer(serializers.ModelSerializer):
-    operation_type_display = serializers.CharField(source='get_operation_type_display', read_only=True)
+    operation_count = serializers.IntegerField(read_only=True)
+    total_amount = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    has_children = serializers.BooleanField(read_only=True)
+    full_name = serializers.CharField(read_only=True)
+    parent_name = serializers.CharField(source='parent.name', read_only=True)
     
     class Meta:
         model = Category
         fields = [
-            'id', 'name', 'operation_type', 'operation_type_display',
-            'icon', 'color', 'created_at', 'updated_at'
+            'id', 'name', 'type', 'icon', 'color', 'parent', 'parent_name',
+            'is_default', 'budget_limit', 'description', 'created_at', 'updated_at',
+            'operation_count', 'total_amount', 'has_children', 'full_name'
         ]
         read_only_fields = ['created_at', 'updated_at']
     
     def validate_name(self, value):
-        """Проверка уникальности названия категории для пользователя"""
+        """Валидация уникальности названия категории для пользователя и типа"""
         user = self.context['request'].user
-        operation_type = self.initial_data.get('operation_type')
+        category_type = self.initial_data.get('type')
         
-        if self.instance:
-            # При обновлении проверяем, кроме текущей категории
+        if not category_type:
+            raise serializers.ValidationError("Тип категории обязателен")
+        
+        if self.instance:  # Редактирование существующей категории
             if Category.objects.filter(
                 user=user, 
                 name=value, 
-                operation_type=operation_type
+                type=category_type
             ).exclude(pk=self.instance.pk).exists():
-                raise serializers.ValidationError(
-                    'Категория с таким названием и типом уже существует'
-                )
-        else:
-            # При создании
-            if Category.objects.filter(
-                user=user, 
-                name=value, 
-                operation_type=operation_type
-            ).exists():
-                raise serializers.ValidationError(
-                    'Категория с таким названием и типом уже существует'
-                )
+                raise serializers.ValidationError("Категория с таким названием и типом уже существует")
+        else:  # Создание новой категории
+            if Category.objects.filter(user=user, name=value, type=category_type).exists():
+                raise serializers.ValidationError("Категория с таким названием и типом уже существует")
+        
+        # Ограничение длины названия
+        if len(value) > 255:
+            raise serializers.ValidationError("Название категории не может превышать 255 символов")
         
         return value
     
-    def validate_color(self, value):
-        """Проверка формата цвета"""
-        if not value.startswith('#') or len(value) != 7:
-            raise serializers.ValidationError('Неверный формат цвета. Используйте HEX формат (#RRGGBB)')
+    def validate_parent(self, value):
+        """Валидация родительской категории"""
+        if value:
+            user = self.context['request'].user
+            if value.user != user:
+                raise serializers.ValidationError("Родительская категория должна принадлежать текущему пользователю")
+            
+            # Проверка что родительская категория не является самой собой
+            if self.instance and value.pk == self.instance.pk:
+                raise serializers.ValidationError("Категория не может быть родителем самой себя")
+            
+            # Проверка что родительская категория того же типа
+            category_type = self.initial_data.get('type')
+            if category_type and value.type != category_type:
+                raise serializers.ValidationError("Родительская категория должна быть того же типа")
+        
         return value
 
 class CategoryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name', 'operation_type', 'icon', 'color']
+        fields = ['name', 'type', 'icon', 'color', 'parent', 'budget_limit', 'description']
     
-    def validate_icon(self, value):
-        """Проверка доступности иконки"""
-        available_icons = [icon[0] for icon in CATEGORY_ICONS]
-        if value not in available_icons:
-            raise serializers.ValidationError('Выбранная иконка недоступна')
-        return value
-    
-    def validate_color(self, value):
-        """Проверка доступности цвета"""
-        available_colors = [color[0] for color in CATEGORY_COLORS]
-        if value not in available_colors:
-            raise serializers.ValidationError('Выбранный цвет недоступен')
-        return value
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['user'] = user
+        return super().create(validated_data)
 
-class CategoryWithStatsSerializer(CategorySerializer):
+class CategoryTreeSerializer(serializers.ModelSerializer):
+    subcategories = serializers.SerializerMethodField()
     operation_count = serializers.IntegerField(read_only=True)
-    total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    total_amount = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
     
-    class Meta(CategorySerializer.Meta):
-        fields = CategorySerializer.Meta.fields + ['operation_count', 'total_amount']
+    class Meta:
+        model = Category
+        fields = [
+            'id', 'name', 'type', 'icon', 'color', 'parent',
+            'operation_count', 'total_amount', 'subcategories'
+        ]
+    
+    def get_subcategories(self, obj):
+        """Рекурсивное получение подкатегорий"""
+        subcategories = obj.subcategories.all()
+        serializer = CategoryTreeSerializer(subcategories, many=True)
+        return serializer.data
+
+class CategoryWithStatsSerializer(serializers.ModelSerializer):
+    total_amount = serializers.DecimalField(max_digits=15, decimal_places=2)
+    operation_count = serializers.IntegerField()
+    percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
+    
+    class Meta:
+        model = Category
+        fields = [
+            'id', 'name', 'type', 'icon', 'color',
+            'total_amount', 'operation_count', 'percentage'
+        ]
+
+class CategoryBudgetSerializer(serializers.ModelSerializer):
+    spent_amount = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    remaining_amount = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    progress_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    
+    class Meta:
+        model = CategoryBudget
+        fields = [
+            'id', 'category', 'category_name', 'amount', 'period',
+            'start_date', 'end_date', 'is_active', 'created_at', 'updated_at',
+            'spent_amount', 'remaining_amount', 'progress_percentage'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+    
+    def validate(self, data):
+        """Валидация данных бюджета"""
+        category = data.get('category')
+        period = data.get('period')
+        end_date = data.get('end_date')
+        
+        if category and self.context['request'].user != category.user:
+            raise serializers.ValidationError({"category": "Категория должна принадлежать текущему пользователю"})
+        
+        if period == 'custom' and not end_date:
+            raise serializers.ValidationError({"end_date": "Для произвольного периода необходимо указать конечную дату"})
+        
+        if end_date and data.get('start_date') and end_date <= data['start_date']:
+            raise serializers.ValidationError({"end_date": "Конечная дата должна быть позже начальной"})
+        
+        return data
+
+class CategoryAnalyticsSerializer(serializers.Serializer):
+    period = serializers.ChoiceField(
+        choices=[('all', 'Все'), ('year', 'Год'), ('month', 'Месяц'), ('week', 'Неделя'), ('day', 'День')],
+        default='all',
+        required=False
+    )
+    wallet_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False
+    )
+    category_type = serializers.ChoiceField(
+        choices=[('all', 'Все'), ('income', 'Доход'), ('expense', 'Расход')],
+        default='all',
+        required=False
+    )
