@@ -1,28 +1,51 @@
-# project/backend/api/categories/admin.py
+# evercoin/backend/api/categories/admin.py
 from django.contrib import admin
-from .models import Category
+from .models import Category, CategoryBudget
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'operation_type', 'user', 'icon', 'color', 'created_at']
-    list_filter = ['operation_type', 'created_at']
+    list_display = ['user', 'name', 'type', 'icon', 'color', 'parent', 'is_default', 'created_at']
+    list_filter = ['type', 'is_default', 'created_at']
     search_fields = ['name', 'user__email']
     readonly_fields = ['created_at', 'updated_at']
-    list_per_page = 20
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('user', 'name', 'operation_type')
+            'fields': ('user', 'name', 'type', 'parent')
         }),
         ('Внешний вид', {
-            'fields': ('icon', 'color'),
-            'classes': ('collapse',)
+            'fields': ('icon', 'color')
         }),
-        ('Системная информация', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
+        ('Дополнительно', {
+            'fields': ('budget_limit', 'description', 'is_default')
+        }),
+        ('Даты', {
+            'fields': ('created_at', 'updated_at')
         }),
     )
+
+@admin.register(CategoryBudget)
+class CategoryBudgetAdmin(admin.ModelAdmin):
+    list_display = ['user', 'category', 'amount', 'period', 'is_active', 'created_at']
+    list_filter = ['period', 'is_active', 'created_at']
+    search_fields = ['category__name', 'user__email']
+    readonly_fields = ['created_at', 'updated_at', 'spent_amount', 'remaining_amount']
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user')
+    fieldsets = (
+        ('Информация о бюджете', {
+            'fields': ('user', 'category', 'amount', 'period')
+        }),
+        ('Период', {
+            'fields': ('start_date', 'end_date')
+        }),
+        ('Статус', {
+            'fields': ('is_active',)
+        }),
+        ('Статистика', {
+            'fields': ('spent_amount', 'remaining_amount'),
+            'classes': ('collapse',)
+        }),
+        ('Даты', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
