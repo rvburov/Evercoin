@@ -1,0 +1,74 @@
+# ===== ОСНОВНЫЕ НАСТРОЙКИ =====
+# Автоматическое определение текстовых файлов (рекомендуется Git)
+* text=auto
+
+# ===== ИСХОДНЫЙ КОД =====
+# Все текстовые файлы используют LF в репозитории
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.htm text eol=lf
+*.xml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+
+# ===== СКРИПТЫ =====
+# Исполняемые скрипты должны всегда иметь LF
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+*.ps1 text eol=lf
+
+# ===== БИНАРНЫЕ ФАЙЛЫ =====
+# Изображения
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.svg binary
+*.ico binary
+*.webp binary
+
+# Архивы и документы
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.rar binary
+*.7z binary
+
+# Медиа файлы
+*.mp3 binary
+*.mp4 binary
+*.wav binary
+*.avi binary
+*.mov binary
+
+# ===== СТАТИЧЕСКИЕ ФАЙЛЫ =====
+# Статические файлы Django - оставить как есть (бинарные)
+backend/staticfiles/** binary
+
+# Также для node_modules и других зависимостей
+node_modules/** binary
+
+# ===== ИСКЛЮЧЕНИЯ =====
+# Файлы, которые могут содержать смешанные окончания
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# ===== СЛУЖЕБНЫЕ ФАЙЛЫ =====
+# Git файлы
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.gitmodules text eol=lf
+
+# Editor config
+.editorconfig text eol=lf
