@@ -1,3 +1,4 @@
+# evercoin/backend/config/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -5,11 +6,20 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
-    # Админка
-    path('admin/', admin.site.urls),
+    # Административная панель
+    path('api/admin/', admin.site.urls),
     
     # Пользователь
-    path('api/users/', include('users.urls')),
+    path('api/users/', include('api.users.urls')),
+
+    # Операции
+    path('api/operations/', include('api.operations.urls')),
+
+    # Счета
+    path('api/wallets/', include('api.wallets.urls')),
+    
+    # Категории
+    path('api/categories/', include('api.categories.urls')),
     
     # Документация API
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
