@@ -33,6 +33,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
 ]
 
 # Сторонние приложения, установленные через pip
@@ -170,6 +171,13 @@ REST_FRAMEWORK = {
         'user': '1000/hour',     # 1000 запросов в час для авторизованных пользователей
     },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema', 
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
+    ],
 }
 
 # Настройки для работы с JWT-токенами (опционально)
@@ -191,8 +199,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Настройки документации API
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Django REST API Authentication System',
-    'DESCRIPTION': 'Полнофункциональная система аутентификации и управления пользователями',
+    'TITLE': 'Evercoin',
+    'DESCRIPTION': 'Ведение личных финасов',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
@@ -203,13 +211,24 @@ if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'            # Для разработки
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = config('EMAIL_HOST')                                           # SMTP-сервер   
+    EMAIL_HOST = config('EMAIL_HOST')                                           
     EMAIL_PORT = config('EMAIL_PORT', cast=int)
     EMAIL_USE_SSL = config('EMAIL_USE_SSL', cast=bool)
     EMAIL_HOST_USER = config('EMAIL_HOST_USER')
     EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='noreply@example.com')
+
+# ==================== КЕШИРОВАНИЕ ====================
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+CACHE_TTL = 60 * 15  # 15 минут
 
 # ==================== ТЕСТИРОВАНИЕ НАСТРОЙКИ ====================
 
@@ -238,3 +257,49 @@ if 'test' in sys.argv or 'pytest' in sys.modules:
             return None
 
     MIGRATION_MODULES = DisableMigrations()
+
+# ==================== ЛОГИРОВАНИЕ ====================
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'api': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+# Создаем директорию для логов
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)

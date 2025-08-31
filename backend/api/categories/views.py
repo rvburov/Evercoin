@@ -1,58 +1,81 @@
 # evercoin/backend/api/categories/views.py
+from datetime import datetime, timedelta
+
+from django.db.models import Count, Sum
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Sum, Count, Q
-from django.utils import timezone
-from datetime import datetime, timedelta
-from .models import Category, CategoryBudget
-from .serializers import (
-    CategorySerializer, CategoryCreateSerializer, CategoryTreeSerializer,
-    CategoryWithStatsSerializer, CategoryBudgetSerializer, CategoryAnalyticsSerializer
-)
+from rest_framework.response import Response
+
 from api.operations.models import Operation
 
+from .models import Category, CategoryBudget
+from .serializers import (
+    CategoryAnalyticsSerializer,
+    CategoryBudgetSerializer,
+    CategoryCreateSerializer,
+    CategorySerializer,
+    CategoryTreeSerializer,
+    CategoryWithStatsSerializer,
+)
+
+
 class CategoryViewSet(viewsets.ModelViewSet):
+    """ViewSet для управления категориями."""
+    
     permission_classes = [IsAuthenticated]
     serializer_class = CategorySerializer
     
     def get_queryset(self):
-        return Category.objects.filter(user=self.request.user).select_related('parent')
+        """Получение категорий текущего пользователя."""
+        return Category.objects.filter(
+            user=self.request.user
+        ).select_related('parent')
     
     def get_serializer_class(self):
+        """Выбор сериализатора в зависимости от действия."""
         if self.action in ['create']:
             return CategoryCreateSerializer
         return CategorySerializer
     
     def perform_create(self, serializer):
+        """Сохранение категории с привязкой к пользователю."""
         serializer.save(user=self.request.user)
     
     @action(detail=False, methods=['get'])
     def tree(self, request):
-        """Дерево категорий с иерархией"""
+        """Дерево категорий с иерархией."""
         categories = self.get_queryset().filter(parent__isnull=True)
         serializer = CategoryTreeSerializer(categories, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def by_type(self, request):
-        """Категории по типу"""
+        """Категории по типу (income/expense)."""
         category_type = request.query_params.get('type')
         
         if category_type not in ['income', 'expense']:
             return Response(
-                {"error": "Неверный тип категории. Допустимые значения: income, expense"},
+                {
+                    "error": (
+                        "Неверный тип категории. "
+                        "Допустимые значения: income, expense"
+                    )
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        categories = self.get_queryset().filter(type=category_type, parent__isnull=True)
+        categories = self.get_queryset().filter(
+            type=category_type,
+            parent__isnull=True
+        )
         serializer = self.get_serializer(categories, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def analytics(self, request):
-        """Аналитика по категориям"""
+        """Аналитика по категориям с фильтрацией."""
         serializer = CategoryAnalyticsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         filters = serializer.validated_data
@@ -64,17 +87,23 @@ class CategoryViewSet(viewsets.ModelViewSet):
         operations_queryset = Operation.objects.filter(user=request.user)
         
         if date_filter:
-            operations_queryset = operations_queryset.filter(date__range=date_filter)
+            operations_queryset = operations_queryset.filter(
+                date__range=date_filter
+            )
         
         # Фильтрация по счетам
         wallet_ids = filters.get('wallet_ids')
         if wallet_ids:
-            operations_queryset = operations_queryset.filter(wallet_id__in=wallet_ids)
+            operations_queryset = operations_queryset.filter(
+                wallet_id__in=wallet_ids
+            )
         
         # Фильтрация по типу категории
         category_type = filters.get('category_type')
         if category_type and category_type != 'all':
-            operations_queryset = operations_queryset.filter(category__type=category_type)
+            operations_queryset = operations_queryset.filter(
+                category__type=category_type
+            )
         
         # Агрегация данных по категориям
         categories_data = Category.objects.filter(
@@ -87,12 +116,17 @@ class CategoryViewSet(viewsets.ModelViewSet):
         
         # Общее количество операций и сумма
         total_operations = operations_queryset.count()
-        total_amount = operations_queryset.aggregate(total=Sum('amount'))['total'] or 0
+        total_amount = operations_queryset.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
         
         # Расчет процентов
         category_stats = []
         for category in categories_data:
-            percentage = (category.total_amount / total_amount * 100) if total_amount > 0 else 0
+            percentage = (
+                (category.total_amount / total_amount * 100)
+                if total_amount > 0 else 0
+            )
             category_stats.append({
                 'id': category.id,
                 'name': category.name,
@@ -113,7 +147,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['get'])
     def operations(self, request, pk=None):
-        """Операции по конкретной категории"""
+        """Операции по конкретной категории с пагинацией."""
         category = self.get_object()
         
         # Параметры фильтрации
@@ -127,19 +161,27 @@ class CategoryViewSet(viewsets.ModelViewSet):
         if period != 'all':
             now = timezone.now()
             if period == 'month':
-                start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                start_date = now.replace(
+                    day=1, hour=0, minute=0, second=0, microsecond=0
+                )
                 queryset = queryset.filter(date__gte=start_date)
             elif period == 'week':
                 start_date = now - timedelta(days=now.weekday())
-                start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                start_date = start_date.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
                 queryset = queryset.filter(date__gte=start_date)
             elif period == 'day':
-                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                start_date = now.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
                 queryset = queryset.filter(date__gte=start_date)
         
         # Пагинация
         total_count = queryset.count()
-        operations = queryset.select_related('wallet').order_by('-date')[offset:offset + limit]
+        operations = queryset.select_related('wallet').order_by('-date')[
+            offset:offset + limit
+        ]
         
         from api.operations.serializers import OperationSerializer
         serializer = OperationSerializer(operations, many=True)
@@ -152,47 +194,62 @@ class CategoryViewSet(viewsets.ModelViewSet):
         })
     
     def get_date_filter(self, period):
-        """Получение диапазона дат для фильтра по периоду"""
+        """Получение диапазона дат для фильтра по периоду."""
         now = timezone.now()
         
         if period == 'year':
-            start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            start_date = now.replace(
+                month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+            )
             end_date = now
         elif period == 'month':
-            start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            start_date = now.replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
             end_date = now
         elif period == 'week':
             start_date = now - timedelta(days=now.weekday())
-            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_date = start_date.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             end_date = now
         elif period == 'day':
-            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_date = now.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             end_date = now
         else:
             return None
         
         return (start_date, end_date)
 
+
 class CategoryBudgetViewSet(viewsets.ModelViewSet):
+    """ViewSet для управления бюджетами категорий."""
+    
     permission_classes = [IsAuthenticated]
     serializer_class = CategoryBudgetSerializer
     
     def get_queryset(self):
-        return CategoryBudget.objects.filter(user=self.request.user).select_related('category')
+        """Получение бюджетов текущего пользователя."""
+        return CategoryBudget.objects.filter(
+            user=self.request.user
+        ).select_related('category')
     
     def perform_create(self, serializer):
+        """Сохранение бюджета с привязкой к пользователю."""
         serializer.save(user=self.request.user)
     
     @action(detail=False, methods=['get'])
     def active(self, request):
-        """Активные бюджеты"""
+        """Активные бюджеты."""
         budgets = self.get_queryset().filter(is_active=True)
         serializer = self.get_serializer(budgets, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def overview(self, request):
-        """Обзор бюджетов с прогрессом"""
+        """Обзор бюджетов с прогрессом."""
         budgets = self.get_queryset().filter(is_active=True)
         
         budget_data = []
@@ -213,24 +270,27 @@ class CategoryBudgetViewSet(viewsets.ModelViewSet):
         
         return Response(budget_data)
 
+
 class CategoryConstantsViewSet(viewsets.ViewSet):
+    """ViewSet для получения констант категорий."""
+    
     permission_classes = [IsAuthenticated]
     
     @action(detail=False, methods=['get'])
     def icons(self, request):
-        """Список доступных иконок для категорий"""
+        """Список доступных иконок для категорий."""
         from api.core.constants.icons import CATEGORY_ICONS
         return Response(CATEGORY_ICONS)
     
     @action(detail=False, methods=['get'])
     def colors(self, request):
-        """Список доступных цветов для категорий"""
+        """Список доступных цветов для категорий."""
         from api.core.constants.colors import COLORS
         return Response(COLORS)
     
     @action(detail=False, methods=['get'])
     def types(self, request):
-        """Типы категорий"""
+        """Типы категорий."""
         return Response([
             {'value': 'income', 'label': 'Доход'},
             {'value': 'expense', 'label': 'Расход'}

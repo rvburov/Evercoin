@@ -35,7 +35,7 @@ git clone https://github.com/rvburov/Evercoin.git
 
 1. Примените миграции для настройки базы данных
 ```bash
-    python manage.py makemigrations
+    python manage.py makemigrations users operations categories wallets
     python manage.py migrate
 ```
 2. Создайте суперпользователя для доступа к административной панели
