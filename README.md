@@ -155,6 +155,7 @@ Evercoin/                                        # Корневая директ
 ├── .github/workflows/                           # CI/CD автоматизация
 │   └── ci-cd.yml                                # Конфигурация GitHub Actions (тесты, деплой)
 │
+├── pytest.ini                                   # Конфигурация тестов
 ├── docker-compose.yml                           # Конфигурация для разработки (Django + PostgreSQL + Redis)
 ├── docker-compose.prod.yml                      # Конфигурация для продакшена (Gunicorn + Traefik)
 ├── .env.example                                 # Пример переменных окружения (SECRET_KEY, DB_URL)
