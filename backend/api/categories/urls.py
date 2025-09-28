@@ -1,51 +1,43 @@
 # evercoin/backend/api/categories/urls.py
-from django.urls import include, path
-from rest_framework.routers import DefaultRouter
+from django.urls import path
+from . import views
 
-from .views import (
-    CategoryBudgetViewSet,
-    CategoryConstantsViewSet,
-    CategoryViewSet,
-)
-
-router = DefaultRouter()
-router.register(r'categories', CategoryViewSet, basename='category')
-router.register(
-    r'budgets',
-    CategoryBudgetViewSet,
-    basename='category-budget'
-)
-router.register(
-    r'constants',
-    CategoryConstantsViewSet,
-    basename='category-constants'
-)
+app_name = 'categories'
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path(
-        'categories/tree/',
-        CategoryViewSet.as_view({'get': 'tree'}),
-        name='category-tree'
-    ),
-    path(
-        'categories/type/<str:type>/',
-        CategoryViewSet.as_view({'get': 'by_type'}),
-        name='category-by-type'
-    ),
-    path(
-        'categories/analytics/',
-        CategoryViewSet.as_view({'get': 'analytics'}),
-        name='category-analytics'
-    ),
-    path(
-        'budgets/active/',
-        CategoryBudgetViewSet.as_view({'get': 'active'}),
-        name='category-budget-active'
-    ),
-    path(
-        'budgets/overview/',
-        CategoryBudgetViewSet.as_view({'get': 'overview'}),
-        name='category-budget-overview'
-    ),
+    # Список категорий
+    path('categories/', views.CategoryListView.as_view(), name='category-list'),
+    
+    # Детали категории
+    path('categories/<int:pk>/', views.CategoryDetailView.as_view(), name='category-detail'),
+    
+    # Создание категории
+    path('categories/create/', views.CategoryCreateView.as_view(), name='category-create'),
+    
+    # Обновление категории
+    path('categories/<int:pk>/update/', views.CategoryUpdateView.as_view(), name='category-update'),
+    
+    # Удаление категории
+    path('categories/<int:pk>/delete/', views.CategoryDeleteView.as_view(), name='category-delete'),
+    
+    # Слияние категорий
+    path('categories/merge/', views.CategoryMergeView.as_view(), name='category-merge'),
+    
+    # Массовое создание категорий
+    path('categories/bulk-create/', views.CategoryBulkCreateView.as_view(), name='category-bulk-create'),
+    
+    # Категории по типу
+    path('categories/type/<str:type>/', views.CategoryByTypeView.as_view(), name='category-by-type'),
+    
+    # Активация/деактивация категории
+    path('categories/<int:pk>/toggle-active/', views.CategoryToggleActiveView.as_view(), name='category-toggle-active'),
+    
+    # Системные категории
+    path('categories/default/', views.CategoryDefaultListView.as_view(), name='category-default-list'),
+    
+    # Создание стандартных категорий
+    path('categories/create-default/', views.create_default_categories, name='create-default-categories'),
+    
+    # Статистика по категориям
+    path('categories/statistics/', views.category_statistics, name='category-statistics'),
 ]

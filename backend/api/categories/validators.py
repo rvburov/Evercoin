@@ -1,44 +1,52 @@
 # evercoin/backend/api/categories/validators.py
-from rest_framework import serializers
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 
-def validate_category_name_uniqueness(user, name, category_type, exclude_pk=None):
-    """Проверка уникальности названия категории для пользователя и типа."""
-    queryset = user.categories.filter(type=category_type)
-    if exclude_pk:
-        queryset = queryset.exclude(pk=exclude_pk)
+def validate_category_name_unique_per_user(value, user):
+    """
+    Валидация уникальности названия категории для пользователя
+    """
+    from .models import Category
     
-    if queryset.filter(name=name).exists():
-        raise serializers.ValidationError(
-            "Категория с таким названием и типом уже существует"
-        )
-    return name
+    if Category.objects.filter(user=user, name=value).exists():
+        raise ValidationError(_('У вас уже есть категория с таким названием'))
 
 
-def validate_category_name_length(value):
-    """Проверка длины названия категории."""
-    if len(value) > 255:
-        raise serializers.ValidationError(
-            "Название категории не может превышать 255 символов"
-        )
-    return value
+def validate_category_type(value):
+    """
+    Валидация типа категории
+    """
+    valid_types = ['income', 'expense']
+    if value not in valid_types:
+        raise ValidationError(_('Недопустимый тип категории'))
 
 
-def validate_icon(value):
-    """Проверка допустимости иконки."""
+def validate_category_icon(value):
+    """
+    Валидация иконки категории
+    """
     from api.core.constants.icons import CATEGORY_ICONS
+    
     valid_icons = [icon[0] for icon in CATEGORY_ICONS]
-    
     if value not in valid_icons:
-        raise serializers.ValidationError("Недопустимая иконка")
-    return value
+        raise ValidationError(_('Недопустимая иконка категории'))
 
 
-def validate_color(value):
-    """Проверка допустимости цвета."""
+def validate_category_color(value):
+    """
+    Валидация цвета категории
+    """
     from api.core.constants.colors import COLORS
-    valid_colors = [color[0] for color in COLORS]
     
+    valid_colors = [color[0] for color in COLORS]
     if value not in valid_colors:
-        raise serializers.ValidationError("Недопустимый цвет")
-    return value
+        raise ValidationError(_('Недопустимый цвет категории'))
+
+
+def validate_not_default_category(category):
+    """
+    Валидация, что категория не является системной
+    """
+    if category.is_default:
+        raise ValidationError(_('Нельзя изменять системные категории'))

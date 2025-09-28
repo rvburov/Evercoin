@@ -1,109 +1,65 @@
 # evercoin/backend/api/operations/admin.py
 from django.contrib import admin
-
-from .models import Operation, OperationLog
+from .models import Operation
 
 
 @admin.register(Operation)
 class OperationAdmin(admin.ModelAdmin):
-    """Админ-интерфейс для модели Operation."""
-
+    """
+    Админ-панель для операций
+    """
     list_display = [
-        'user',
-        'title',
-        'amount',
-        'operation_type',
-        'category',
-        'wallet',
-        'date'
+        'title', 
+        'amount', 
+        'operation_type', 
+        'wallet', 
+        'category', 
+        'operation_date', 
+        'user'
     ]
+    
     list_filter = [
-        'operation_type',
-        'date',
-        'category',
-        'wallet',
-        'is_recurring'
+        'operation_type', 
+        'wallet', 
+        'category', 
+        'operation_date',
+        'created_at'
     ]
+    
     search_fields = [
-        'title',
+        'title', 
         'description',
-        'user__email'
+        'user__email',
+        'user__username'
     ]
-    readonly_fields = [
-        'created_at',
-        'updated_at'
-    ]
-    date_hierarchy = 'date'
-
+    
+    readonly_fields = ['created_at', 'updated_at']
+    
+    date_hierarchy = 'operation_date'
+    
     fieldsets = (
         ('Основная информация', {
             'fields': (
-                'user',
-                'title',
-                'amount',
+                'user', 
+                'title', 
+                'amount', 
+                'operation_type',
+                'operation_date'
+            )
+        }),
+        ('Дополнительная информация', {
+            'fields': (
                 'description',
-                'operation_type'
-            )
-        }),
-        ('Категория и счет', {
-            'fields': (
+                'wallet',
                 'category',
-                'wallet'
+                'transfer_to_wallet'
             )
         }),
-        ('Даты', {
+        ('Системная информация', {
             'fields': (
-                'date',
                 'created_at',
                 'updated_at'
-            )
-        }),
-        ('Повторяющаяся операция', {
-            'fields': (
-                'is_recurring',
-                'recurring_pattern'
             ),
             'classes': ('collapse',)
-        }),
-    )
-
-
-@admin.register(OperationLog)
-class OperationLogAdmin(admin.ModelAdmin):
-    """Админ-интерфейс для логов операций."""
-
-    list_display = [
-        'user',
-        'operation',
-        'action',
-        'created_at'
-    ]
-    list_filter = [
-        'action',
-        'created_at'
-    ]
-    search_fields = [
-        'user__email',
-        'operation__title'
-    ]
-    readonly_fields = ['created_at']
-
-    fieldsets = (
-        ('Информация о действии', {
-            'fields': (
-                'user',
-                'operation',
-                'action'
-            )
-        }),
-        ('Данные', {
-            'fields': (
-                'old_data',
-                'new_data'
-            ),
-            'classes': ('collapse',)
-        }),
-        ('Дата', {
-            'fields': ('created_at',)
         }),
     )

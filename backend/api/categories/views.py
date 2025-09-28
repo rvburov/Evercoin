@@ -1,297 +1,340 @@
 # evercoin/backend/api/categories/views.py
-from datetime import datetime, timedelta
-
-from django.db.models import Count, Sum
-from django.utils import timezone
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 
-from api.operations.models import Operation
-
-from .models import Category, CategoryBudget
+from .models import Category, CategoryMerge
 from .serializers import (
-    CategoryAnalyticsSerializer,
-    CategoryBudgetSerializer,
-    CategoryCreateSerializer,
     CategorySerializer,
-    CategoryTreeSerializer,
-    CategoryWithStatsSerializer,
+    CategoryCreateSerializer,
+    CategoryUpdateSerializer,
+    CategoryListSerializer,
+    CategoryMergeSerializer,
+    CategoryDeleteSerializer,
+    CategoryBulkCreateSerializer
 )
+from .filters import CategoryFilter
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
-    """ViewSet для управления категориями."""
-    
+class CategoryListView(generics.ListAPIView):
+    """
+    API endpoint для получения списка категорий пользователя
+    """
+    serializer_class = CategoryListSerializer
     permission_classes = [IsAuthenticated]
-    serializer_class = CategorySerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_class = CategoryFilter
+    ordering_fields = ['name', 'operation_count', 'created_at']
+    ordering = ['category_type', 'name']
+    search_fields = ['name', 'description']
     
     def get_queryset(self):
-        """Получение категорий текущего пользователя."""
-        return Category.objects.filter(
-            user=self.request.user
-        ).select_related('parent')
+        """
+        Возвращает категории только текущего пользователя
+        """
+        return Category.objects.filter(user=self.request.user, is_active=True)
+
+
+class CategoryDetailView(generics.RetrieveAPIView):
+    """
+    API endpoint для получения деталей конкретной категории
+    """
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
     
-    def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от действия."""
-        if self.action in ['create']:
-            return CategoryCreateSerializer
-        return CategorySerializer
+    def get_queryset(self):
+        """
+        Возвращает категории только текущего пользователя
+        """
+        return Category.objects.filter(user=self.request.user)
+
+
+class CategoryCreateView(generics.CreateAPIView):
+    """
+    API endpoint для создания новой категории
+    """
+    serializer_class = CategoryCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CategoryUpdateView(generics.UpdateAPIView):
+    """
+    API endpoint для обновления существующей категории
+    """
+    serializer_class = CategoryUpdateSerializer
+    permission_classes = [IsAuthenticated]
     
-    def perform_create(self, serializer):
-        """Сохранение категории с привязкой к пользователю."""
-        serializer.save(user=self.request.user)
+    def get_queryset(self):
+        """
+        Возвращает категории только текущего пользователя
+        """
+        return Category.objects.filter(user=self.request.user)
+
+
+class CategoryDeleteView(generics.DestroyAPIView):
+    """
+    API endpoint для удаления категории с обработкой связанных операций
+    """
+    permission_classes = [IsAuthenticated]
     
-    @action(detail=False, methods=['get'])
-    def tree(self, request):
-        """Дерево категорий с иерархией."""
-        categories = self.get_queryset().filter(parent__isnull=True)
-        serializer = CategoryTreeSerializer(categories, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        """
+        Возвращает категории только текущего пользователя
+        """
+        return Category.objects.filter(user=self.request.user, is_default=False)
     
-    @action(detail=False, methods=['get'])
-    def by_type(self, request):
-        """Категории по типу (income/expense)."""
-        category_type = request.query_params.get('type')
+    def delete(self, request, *args, **kwargs):
+        """
+        Обработка удаления категории с опциями переноса операций
+        """
+        category = self.get_object()
+        serializer = CategoryDeleteSerializer(
+            data=request.data, 
+            context={
+                'request': request,
+                'category_type': category.category_type
+            }
+        )
         
-        if category_type not in ['income', 'expense']:
-            return Response(
-                {
-                    "error": (
-                        "Неверный тип категории. "
-                        "Допустимые значения: income, expense"
+        if serializer.is_valid():
+            return self._delete_category_with_options(category, serializer.validated_data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def _delete_category_with_options(self, category, options):
+        """
+        Удаление категории с выбранными опциями
+        """
+        from api.operations.models import Operation
+        
+        merge_with_id = options.get('merge_with')
+        delete_operations = options.get('delete_operations', False)
+        
+        try:
+            with transaction.atomic():
+                # Проверяем наличие операций
+                operation_count = category.operations.count()
+                
+                if operation_count == 0:
+                    # Если операций нет, просто удаляем категорию
+                    category.delete()
+                    return Response(
+                        {'message': 'Категория успешно удалена'}, 
+                        status=status.HTTP_200_OK
                     )
-                },
+                
+                if delete_operations:
+                    # Удаляем все операции категории
+                    category.operations.all().delete()
+                    category.delete()
+                    return Response(
+                        {'message': f'Категория и {operation_count} операций успешно удалены'}, 
+                        status=status.HTTP_200_OK
+                    )
+                
+                if merge_with_id:
+                    # Переносим операции на другую категорию
+                    merge_with_category = Category.objects.get(
+                        pk=merge_with_id, 
+                        user=self.request.user
+                    )
+                    
+                    # Обновляем операции
+                    Operation.objects.filter(category=category).update(category=merge_with_category)
+                    
+                    # Создаем запись о слиянии
+                    CategoryMerge.objects.create(
+                        user=self.request.user,
+                        from_category=category,
+                        to_category=merge_with_category,
+                        operation_count=operation_count
+                    )
+                    
+                    category.delete()
+                    return Response(
+                        {'message': f'Категория удалена, операции перенесены на {merge_with_category.name}'}, 
+                        status=status.HTTP_200_OK
+                    )
+                
+                # Если не выбрана опция, возвращаем ошибку
+                return Response(
+                    {
+                        'error': 'Нельзя удалить категорию с привязанными операциями',
+                        'operation_count': operation_count,
+                        'options': {
+                            'merge_with': 'ID категории для переноса операций',
+                            'delete_operations': 'Удалить все операции категории'
+                        }
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Ошибка при удалении категории: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CategoryMergeView(generics.CreateAPIView):
+    """
+    API endpoint для слияния двух категорий
+    """
+    serializer_class = CategoryMergeSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CategoryBulkCreateView(generics.CreateAPIView):
+    """
+    API endpoint для массового создания категорий
+    """
+    serializer_class = CategoryBulkCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CategoryByTypeView(generics.ListAPIView):
+    """
+    API endpoint для получения категорий по типу
+    """
+    serializer_class = CategoryListSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Возвращает категории определенного типа для текущего пользователя
+        """
+        category_type = self.kwargs.get('type')
+        if category_type not in ['income', 'expense']:
+            return Category.objects.none()
+        
+        return Category.objects.filter(
+            user=self.request.user, 
+            category_type=category_type,
+            is_active=True
+        )
+
+
+class CategoryToggleActiveView(generics.GenericAPIView):
+    """
+    API endpoint для активации/деактивации категории
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, pk, *args, **kwargs):
+        """
+        Переключение активности категории
+        """
+        category = get_object_or_404(Category, pk=pk, user=request.user)
+        
+        # Системные категории нельзя деактивировать
+        if category.is_default:
+            return Response(
+                {'error': 'Нельзя деактивировать системную категорию'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        categories = self.get_queryset().filter(
-            type=category_type,
-            parent__isnull=True
-        )
-        serializer = self.get_serializer(categories, many=True)
+        category.is_active = not category.is_active
+        category.save()
+        
+        serializer = CategorySerializer(category)
         return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def analytics(self, request):
-        """Аналитика по категориям с фильтрацией."""
-        serializer = CategoryAnalyticsSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-        filters = serializer.validated_data
-        
-        # Фильтрация по периоду
-        date_filter = self.get_date_filter(filters.get('period'))
-        
-        # Базовый queryset операций
-        operations_queryset = Operation.objects.filter(user=request.user)
-        
-        if date_filter:
-            operations_queryset = operations_queryset.filter(
-                date__range=date_filter
-            )
-        
-        # Фильтрация по счетам
-        wallet_ids = filters.get('wallet_ids')
-        if wallet_ids:
-            operations_queryset = operations_queryset.filter(
-                wallet_id__in=wallet_ids
-            )
-        
-        # Фильтрация по типу категории
-        category_type = filters.get('category_type')
-        if category_type and category_type != 'all':
-            operations_queryset = operations_queryset.filter(
-                category__type=category_type
-            )
-        
-        # Агрегация данных по категориям
-        categories_data = Category.objects.filter(
-            user=request.user,
-            operations__in=operations_queryset
-        ).annotate(
-            total_amount=Sum('operations__amount'),
-            operation_count=Count('operations')
-        ).exclude(total_amount__isnull=True).order_by('-total_amount')
-        
-        # Общее количество операций и сумма
-        total_operations = operations_queryset.count()
-        total_amount = operations_queryset.aggregate(
-            total=Sum('amount')
-        )['total'] or 0
-        
-        # Расчет процентов
-        category_stats = []
-        for category in categories_data:
-            percentage = (
-                (category.total_amount / total_amount * 100)
-                if total_amount > 0 else 0
-            )
-            category_stats.append({
-                'id': category.id,
-                'name': category.name,
-                'type': category.type,
-                'icon': category.icon,
-                'color': category.color,
-                'total_amount': category.total_amount,
-                'operation_count': category.operation_count,
-                'percentage': round(percentage, 2)
-            })
-        
-        return Response({
-            'categories': category_stats,
-            'total_operations': total_operations,
-            'total_amount': total_amount,
-            'period': filters.get('period', 'all')
-        })
-    
-    @action(detail=True, methods=['get'])
-    def operations(self, request, pk=None):
-        """Операции по конкретной категории с пагинацией."""
-        category = self.get_object()
-        
-        # Параметры фильтрации
-        period = request.query_params.get('period', 'all')
-        limit = int(request.query_params.get('limit', 20))
-        offset = int(request.query_params.get('offset', 0))
-        
-        queryset = Operation.objects.filter(category=category)
-        
-        # Фильтрация по периоду
-        if period != 'all':
-            now = timezone.now()
-            if period == 'month':
-                start_date = now.replace(
-                    day=1, hour=0, minute=0, second=0, microsecond=0
-                )
-                queryset = queryset.filter(date__gte=start_date)
-            elif period == 'week':
-                start_date = now - timedelta(days=now.weekday())
-                start_date = start_date.replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
-                queryset = queryset.filter(date__gte=start_date)
-            elif period == 'day':
-                start_date = now.replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
-                queryset = queryset.filter(date__gte=start_date)
-        
-        # Пагинация
-        total_count = queryset.count()
-        operations = queryset.select_related('wallet').order_by('-date')[
-            offset:offset + limit
-        ]
-        
-        from api.operations.serializers import OperationSerializer
-        serializer = OperationSerializer(operations, many=True)
-        
-        return Response({
-            'results': serializer.data,
-            'count': total_count,
-            'next_offset': offset + limit if offset + limit < total_count else None,
-            'previous_offset': offset - limit if offset > 0 else None
-        })
-    
-    def get_date_filter(self, period):
-        """Получение диапазона дат для фильтра по периоду."""
-        now = timezone.now()
-        
-        if period == 'year':
-            start_date = now.replace(
-                month=1, day=1, hour=0, minute=0, second=0, microsecond=0
-            )
-            end_date = now
-        elif period == 'month':
-            start_date = now.replace(
-                day=1, hour=0, minute=0, second=0, microsecond=0
-            )
-            end_date = now
-        elif period == 'week':
-            start_date = now - timedelta(days=now.weekday())
-            start_date = start_date.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            end_date = now
-        elif period == 'day':
-            start_date = now.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            end_date = now
-        else:
-            return None
-        
-        return (start_date, end_date)
 
 
-class CategoryBudgetViewSet(viewsets.ModelViewSet):
-    """ViewSet для управления бюджетами категорий."""
-    
+class CategoryDefaultListView(generics.ListAPIView):
+    """
+    API endpoint для получения системных категорий
+    """
+    serializer_class = CategoryListSerializer
     permission_classes = [IsAuthenticated]
-    serializer_class = CategoryBudgetSerializer
     
     def get_queryset(self):
-        """Получение бюджетов текущего пользователя."""
-        return CategoryBudget.objects.filter(
-            user=self.request.user
-        ).select_related('category')
-    
-    def perform_create(self, serializer):
-        """Сохранение бюджета с привязкой к пользователю."""
-        serializer.save(user=self.request.user)
-    
-    @action(detail=False, methods=['get'])
-    def active(self, request):
-        """Активные бюджеты."""
-        budgets = self.get_queryset().filter(is_active=True)
-        serializer = self.get_serializer(budgets, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def overview(self, request):
-        """Обзор бюджетов с прогрессом."""
-        budgets = self.get_queryset().filter(is_active=True)
-        
-        budget_data = []
-        for budget in budgets:
-            budget_data.append({
-                'id': budget.id,
-                'category_id': budget.category.id,
-                'category_name': budget.category.name,
-                'category_icon': budget.category.icon,
-                'category_color': budget.category.color,
-                'budget_amount': budget.amount,
-                'spent_amount': budget.spent_amount,
-                'remaining_amount': budget.remaining_amount,
-                'progress_percentage': budget.progress_percentage,
-                'period': budget.period,
-                'is_over_budget': budget.spent_amount > budget.amount
-            })
-        
-        return Response(budget_data)
+        """
+        Возвращает системные категории для текущего пользователя
+        """
+        return Category.objects.filter(user=self.request.user, is_default=True, is_active=True)
 
 
-class CategoryConstantsViewSet(viewsets.ViewSet):
-    """ViewSet для получения констант категорий."""
+@api_view(['POST'])
+@transaction.atomic
+def create_default_categories(request):
+    """
+    API endpoint для создания стандартных категорий для пользователя
+    """
+    # Проверяем, есть ли уже категории у пользователя
+    if Category.objects.filter(user=request.user).exists():
+        return Response(
+            {'error': 'У вас уже есть категории'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
-    permission_classes = [IsAuthenticated]
+    try:
+        categories = Category.create_default_categories(request.user)
+        serializer = CategoryListSerializer(categories, many=True)
+        
+        return Response({
+            'message': f'Создано {len(categories)} стандартных категорий',
+            'categories': serializer.data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Ошибка при создании категорий: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+def category_statistics(request):
+    """
+    API endpoint для получения статистики по категориям
+    """
+    from django.db.models import Count, Sum
     
-    @action(detail=False, methods=['get'])
-    def icons(self, request):
-        """Список доступных иконок для категорий."""
-        from api.core.constants.icons import CATEGORY_ICONS
-        return Response(CATEGORY_ICONS)
+    categories = Category.objects.filter(user=request.user, is_active=True)
     
-    @action(detail=False, methods=['get'])
-    def colors(self, request):
-        """Список доступных цветов для категорий."""
-        from api.core.constants.colors import COLORS
-        return Response(COLORS)
+    # Статистика по типам категорий
+    type_stats = (
+        categories.values('category_type')
+        .annotate(
+            category_count=Count('id'),
+            total_operations=Sum('operations__amount'),
+            operation_count=Count('operations')
+        )
+        .order_by('category_type')
+    )
     
-    @action(detail=False, methods=['get'])
-    def types(self, request):
-        """Типы категорий."""
-        return Response([
-            {'value': 'income', 'label': 'Доход'},
-            {'value': 'expense', 'label': 'Расход'}
-        ])
+    # Самые используемые категории
+    most_used_categories = (
+        categories.annotate(
+            operation_count=Count('operations'),
+            total_amount=Sum('operations__amount')
+        )
+        .filter(operation_count__gt=0)
+        .order_by('-operation_count')[:10]
+    )
+    
+    most_used_data = [
+        {
+            'id': category.id,
+            'name': category.name,
+            'operation_count': category.operation_count,
+            'total_amount': category.total_amount or 0,
+            'category_type': category.category_type
+        }
+        for category in most_used_categories
+    ]
+    
+    # Категории без операций
+    unused_categories = categories.filter(operations__isnull=True).count()
+    
+    return Response({
+        'type_statistics': list(type_stats),
+        'most_used_categories': most_used_data,
+        'unused_categories_count': unused_categories,
+        'total_categories': categories.count()
+    })

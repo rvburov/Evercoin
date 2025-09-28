@@ -1,4 +1,4 @@
-# evercoin/backend/api/categories/core/constants/icons.py
+# evercoin/backend/api/core/constants/icons.py
 WALLET_ICONS = [
     ('wallet', 'Кошелек'),
     ('credit-card', 'Кредитная карта'),

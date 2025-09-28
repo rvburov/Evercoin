@@ -1,541 +1,184 @@
 # evercoin/backend/api/operations/views.py
+from rest_framework import generics, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
+from django.db import transaction
+from django.utils import timezone
 from datetime import datetime, timedelta
 
-from django.core.cache import cache
-from django.db.models import Count, Q, Sum
-from django.utils import timezone
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
-from api.categories.models import Category
-from api.wallets.models import Wallet
-
-from .models import Operation, OperationLog
+from .models import Operation
 from .serializers import (
-    FinancialResultSerializer,
-    OperationAnalyticsSerializer,
+    OperationSerializer, 
     OperationCreateSerializer,
-    OperationFilterSerializer,
-    OperationLogSerializer,
-    OperationSerializer,
-    OperationSummarySerializer,
+    OperationUpdateSerializer,
+    OperationListSerializer
 )
+from .filters import OperationFilter
 
 
-class OperationViewSet(viewsets.ModelViewSet):
-    """ViewSet для управления финансовыми операциями."""
-
+class OperationListView(generics.ListAPIView):
+    """
+    API endpoint для получения списка операций с пагинацией и фильтрацией
+    """
+    serializer_class = OperationListSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_class = OperationFilter
+    ordering_fields = ['operation_date', 'amount', 'created_at']
+    ordering = ['-operation_date']
+    search_fields = ['title', 'description']
+    
+    def get_queryset(self):
+        """
+        Возвращает операции только текущего пользователя
+        """
+        return Operation.objects.filter(user=self.request.user).select_related(
+            'wallet', 'category', 'transfer_to_wallet'
+        )
+
+
+class OperationDetailView(generics.RetrieveAPIView):
+    """
+    API endpoint для получения деталей конкретной операции
+    """
     serializer_class = OperationSerializer
-
-    def get_queryset(self):
-        """Получение операций текущего пользователя."""
-        return Operation.objects.filter(
-            user=self.request.user
-        ).select_related(
-            'category',
-            'wallet'
-        ).prefetch_related('logs')
-
-    def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от действия."""
-        if self.action in ['create', 'update', 'partial_update']:
-            return OperationCreateSerializer
-        return OperationSerializer
-
-    def create(self, request, *args, **kwargs):
-        """Создание операции с логированием."""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            operation = self.perform_create(serializer)
-            OperationLog.objects.create(
-                user=request.user,
-                operation=operation,
-                action='create',
-                new_data=serializer.data
-            )
-        except ValueError as e:
-            if str(e) == "На счету недостаточно средств":
-                return Response(
-                    {
-                        "detail": "На счету недостаточно средств",
-                        "code": "insufficient_funds"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            raise
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED,
-            headers=headers
-        )
-
-    def update(self, request, *args, **kwargs):
-        """Обновление операции с логированием."""
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-
-        old_data = OperationSerializer(instance).data
-
-        serializer = self.get_serializer(
-            instance,
-            data=request.data,
-            partial=partial
-        )
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            self.perform_update(serializer)
-            OperationLog.objects.create(
-                user=request.user,
-                operation=instance,
-                action='update',
-                old_data=old_data,
-                new_data=serializer.data
-            )
-        except ValueError as e:
-            if str(e) == "На счету недостаточно средств":
-                return Response(
-                    {
-                        "detail": "На счету недостаточно средств",
-                        "code": "insufficient_funds"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            raise
-
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        """Удаление операции с логированием."""
-        instance = self.get_object()
-
-        old_data = OperationSerializer(instance).data
-
-        OperationLog.objects.create(
-            user=request.user,
-            operation=instance,
-            action='delete',
-            old_data=old_data
-        )
-
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=False, methods=['get'])
-    def list_operations(self, request):
-        """Получение списка операций с пагинацией и фильтрацией."""
-        serializer = OperationFilterSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-        filters = serializer.validated_data
-
-        queryset = self.get_queryset()
-        queryset = self.apply_filters(queryset, filters)
-
-        limit = filters.get('limit', 20)
-        offset = filters.get('offset', 0)
-
-        operations = queryset[offset:offset + limit]
-        serializer = self.get_serializer(operations, many=True)
-
-        return Response({
-            'results': serializer.data,
-            'count': queryset.count(),
-            'next_offset': offset + limit if offset + limit < queryset.count() else None,
-            'previous_offset': offset - limit if offset > 0 else None
-        })
-
-    @action(detail=False, methods=['get'])
-    def income_operations(self, request):
-        """Получение доходов за текущий месяц по категориям."""
-        current_month = timezone.now().replace(
-            day=1,
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0
-        )
-        next_month = (current_month + timedelta(days=32)).replace(day=1)
-
-        income_categories = Category.objects.filter(
-            user=request.user,
-            type='income'
-        ).annotate(
-            total_amount=Sum(
-                'operations__amount',
-                filter=Q(
-                    operations__operation_type='income',
-                    operations__date__gte=current_month,
-                    operations__date__lt=next_month
-                )
-            ),
-            operation_count=Count(
-                'operations',
-                filter=Q(
-                    operations__operation_type='income',
-                    operations__date__gte=current_month,
-                    operations__date__lt=next_month
-                )
-            )
-        )
-
-        total_income = Operation.objects.filter(
-            user=request.user,
-            operation_type='income',
-            date__gte=current_month,
-            date__lt=next_month
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        category_data = []
-        for category in income_categories:
-            if category.total_amount:
-                category_data.append({
-                    'category_name': category.name,
-                    'category_icon': category.icon,
-                    'category_color': category.color,
-                    'total_amount': category.total_amount,
-                    'operation_count': category.operation_count
-                })
-
-        return Response({
-            'categories': category_data,
-            'total_income': total_income,
-            'period': current_month.strftime('%Y-%m')
-        })
-
-    @action(detail=False, methods=['get'])
-    def expense_operations(self, request):
-        """Получение расходов за текущий месяц по категориям."""
-        current_month = timezone.now().replace(
-            day=1,
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0
-        )
-        next_month = (current_month + timedelta(days=32)).replace(day=1)
-
-        expense_categories = Category.objects.filter(
-            user=request.user,
-            type='expense'
-        ).annotate(
-            total_amount=Sum(
-                'operations__amount',
-                filter=Q(
-                    operations__operation_type='expense',
-                    operations__date__gte=current_month,
-                    operations__date__lt=next_month
-                )
-            ),
-            operation_count=Count(
-                'operations',
-                filter=Q(
-                    operations__operation_type='expense',
-                    operations__date__gte=current_month,
-                    operations__date__lt=next_month
-                )
-            )
-        )
-
-        total_expense = Operation.objects.filter(
-            user=request.user,
-            operation_type='expense',
-            date__gte=current_month,
-            date__lt=next_month
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        category_data = []
-        for category in expense_categories:
-            if category.total_amount:
-                category_data.append({
-                    'category_name': category.name,
-                    'category_icon': category.icon,
-                    'category_color': category.color,
-                    'total_amount': category.total_amount,
-                    'operation_count': category.operation_count
-                })
-
-        return Response({
-            'categories': category_data,
-            'total_expense': total_expense,
-            'period': current_month.strftime('%Y-%m')
-        })
-
-    @action(detail=False, methods=['get'])
-    def financial_analytics(self, request):
-        """Получение финансовой аналитики (доходы/расходы/результат)."""
-        serializer = OperationAnalyticsSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-        filters = serializer.validated_data
-
-        date_filter = self.get_date_filter(filters.get('period'))
-
-        queryset = Operation.objects.filter(user=request.user)
-        if date_filter:
-            queryset = queryset.filter(date__range=date_filter)
-
-        wallet_ids = filters.get('wallet_ids')
-        if wallet_ids:
-            queryset = queryset.filter(wallet_id__in=wallet_ids)
-
-        income = queryset.filter(
-            operation_type='income'
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        expense = queryset.filter(
-            operation_type='expense'
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        net_result = income - expense
-
-        current_year = timezone.now().year
-        year_operations = Operation.objects.filter(
-            user=request.user,
-            date__year=current_year,
-            date__lt=timezone.now().replace(
-                day=1,
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-        )
-
-        year_income = year_operations.filter(
-            operation_type='income'
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        year_expense = year_operations.filter(
-            operation_type='expense'
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        months_passed = timezone.now().month - 1
-        if months_passed > 0:
-            avg_income = year_income / months_passed
-            avg_expense = year_expense / months_passed
-        else:
-            avg_income = avg_expense = 0
-
-        monthly_results = []
-        for i in range(6):
-            month_date = timezone.now().replace(day=1) - timedelta(days=30 * i)
-            month_start = month_date.replace(
-                day=1,
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-            month_end = (month_start + timedelta(days=32)).replace(day=1)
-
-            month_income = Operation.objects.filter(
-                user=request.user,
-                operation_type='income',
-                date__gte=month_start,
-                date__lt=month_end
-            ).aggregate(total=Sum('amount'))['total'] or 0
-
-            month_expense = Operation.objects.filter(
-                user=request.user,
-                operation_type='expense',
-                date__gte=month_start,
-                date__lt=month_end
-            ).aggregate(total=Sum('amount'))['total'] or 0
-
-            monthly_results.append({
-                'month': month_start.strftime('%Y-%m'),
-                'income': month_income,
-                'expense': month_expense,
-                'net_result': month_income - month_expense
-            })
-
-        return Response({
-            'current_period': {
-                'income': income,
-                'expense': expense,
-                'net_result': net_result
-            },
-            'averages': {
-                'income': avg_income,
-                'expense': avg_expense,
-                'net_result': avg_income - avg_expense
-            },
-            'monthly_results': monthly_results,
-            'period': filters.get('period', 'all')
-        })
-
-    @action(detail=False, methods=['get'])
-    def daily_financial_result(self, request):
-        """Получение финансового результата за конкретный день."""
-        date_str = request.query_params.get('date')
-        if date_str:
-            try:
-                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                start_date = timezone.make_aware(datetime.combine(
-                    target_date,
-                    datetime.min.time()
-                ))
-                end_date = timezone.make_aware(datetime.combine(
-                    target_date,
-                    datetime.max.time()
-                ))
-            except ValueError:
-                return Response(
-                    {"error": "Неверный формат даты. Используйте YYYY-MM-DD"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        else:
-            now = timezone.now()
-            start_date = now.replace(
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-            end_date = now.replace(
-                hour=23,
-                minute=59,
-                second=59,
-                microsecond=999999
-            )
-
-        daily_income = Operation.objects.filter(
-            user=request.user,
-            operation_type='income',
-            date__range=[start_date, end_date]
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        daily_expense = Operation.objects.filter(
-            user=request.user,
-            operation_type='expense',
-            date__range=[start_date, end_date]
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        return Response({
-            'date': start_date.date().isoformat(),
-            'income': daily_income,
-            'expense': daily_expense,
-            'net_result': daily_income - daily_expense
-        })
-
-    @action(detail=True, methods=['post'])
-    def duplicate(self, request, pk=None):
-        """Дублирование существующей операции."""
-        operation = self.get_object()
-
-        duplicate_operation = Operation.objects.create(
-            user=operation.user,
-            amount=operation.amount,
-            title=f"{operation.title} (копия)",
-            description=operation.description,
-            operation_type=operation.operation_type,
-            category=operation.category,
-            wallet=operation.wallet,
-            date=timezone.now(),
-            is_recurring=operation.is_recurring,
-            recurring_pattern=operation.recurring_pattern
-        )
-
-        OperationLog.objects.create(
-            user=request.user,
-            operation=duplicate_operation,
-            action='duplicate',
-            old_data=OperationSerializer(operation).data
-        )
-
-        serializer = self.get_serializer(duplicate_operation)
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED
-        )
-
-    def apply_filters(self, queryset, filters):
-        """Применение фильтров к queryset операций."""
-        date_filter = self.get_date_filter(filters.get('period'))
-        if date_filter:
-            queryset = queryset.filter(date__range=date_filter)
-
-        wallet_ids = filters.get('wallet_ids')
-        if wallet_ids:
-            queryset = queryset.filter(wallet_id__in=wallet_ids)
-
-        operation_type = filters.get('operation_type')
-        if operation_type and operation_type != 'all':
-            queryset = queryset.filter(operation_type=operation_type)
-
-        category_ids = filters.get('category_ids')
-        if category_ids:
-            queryset = queryset.filter(category_id__in=category_ids)
-
-        start_date = filters.get('start_date')
-        end_date = filters.get('end_date')
-        if start_date:
-            queryset = queryset.filter(date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(date__lte=end_date)
-
-        return queryset
-
-    def get_date_filter(self, period):
-        """Получение диапазона дат для фильтра по периоду."""
-        now = timezone.now()
-
-        if period == 'year':
-            start_date = now.replace(
-                month=1,
-                day=1,
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-            end_date = now
-        elif period == 'month':
-            start_date = now.replace(
-                day=1,
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-            end_date = now
-        elif period == 'week':
-            start_date = now - timedelta(days=now.weekday())
-            start_date = start_date.replace(
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-            end_date = now
-        elif period == 'day':
-            start_date = now.replace(
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-            end_date = now
-        else:
-            return None
-
-        return (start_date, end_date)
-
-
-class OperationLogViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet для просмотра логов операций (только чтение)."""
-
     permission_classes = [IsAuthenticated]
-    serializer_class = OperationLogSerializer
-
+    
     def get_queryset(self):
-        """Получение логов текущего пользователя."""
-        return OperationLog.objects.filter(
-            user=self.request.user
-        ).select_related('operation')
+        """
+        Возвращает операции только текущего пользователя
+        """
+        return Operation.objects.filter(user=self.request.user).select_related(
+            'wallet', 'category', 'transfer_to_wallet'
+        )
+
+
+class OperationCreateView(generics.CreateAPIView):
+    """
+    API endpoint для создания новой операции
+    """
+    serializer_class = OperationCreateSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        """
+        Создание операции с автоматическим назначением пользователя
+        """
+        serializer.save(user=self.request.user)
+
+
+class OperationUpdateView(generics.UpdateAPIView):
+    """
+    API endpoint для обновления существующей операции
+    """
+    serializer_class = OperationUpdateSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Возвращает операции только текущего пользователя
+        """
+        return Operation.objects.filter(user=self.request.user)
+
+
+class OperationDeleteView(generics.DestroyAPIView):
+    """
+    API endpoint для удаления операции
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Возвращает операции только текущего пользователя
+        """
+        return Operation.objects.filter(user=self.request.user)
+    
+    def perform_destroy(self, instance):
+        """
+        Удаление операции с обновлением баланса счета
+        """
+        with transaction.atomic():
+            instance.delete()
+
+
+class OperationCopyView(generics.CreateAPIView):
+    """
+    API endpoint для копирования существующей операции
+    """
+    serializer_class = OperationCreateSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Создание копии операции
+        """
+        try:
+            original_operation = Operation.objects.get(
+                pk=kwargs['pk'], 
+                user=request.user
+            )
+            
+            # Создаем копию операции
+            operation_data = {
+                'title': f"{original_operation.title} (копия)",
+                'amount': original_operation.amount,
+                'description': original_operation.description,
+                'operation_type': original_operation.operation_type,
+                'operation_date': timezone.now(),
+                'wallet': original_operation.wallet,
+                'category': original_operation.category,
+                'transfer_to_wallet': original_operation.transfer_to_wallet,
+            }
+            
+            serializer = self.get_serializer(data=operation_data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=request.user)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Operation.DoesNotExist:
+            return Response(
+                {'error': 'Операция не найдена'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class OperationBulkDeleteView(generics.GenericAPIView):
+    """
+    API endpoint для массового удаления операций
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        """
+        Массовое удаление операций
+        """
+        operation_ids = request.data.get('operation_ids', [])
+        
+        if not operation_ids:
+            return Response(
+                {'error': 'Не указаны ID операций для удаления'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            operations = Operation.objects.filter(
+                id__in=operation_ids, 
+                user=request.user
+            )
+            
+            deleted_count, _ = operations.delete()
+            
+            return Response({
+                'message': f'Удалено {deleted_count} операций',
+                'deleted_count': deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Ошибка при удалении операций: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

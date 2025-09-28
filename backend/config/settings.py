@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # Режим отладки: включается/выключается через переменные окружения
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = True
 
 # Разрешенные хосты для развертывания проекта
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
@@ -51,6 +51,7 @@ LOCAL_APPS = [
     'api.operations',
     'api.wallets',
     'api.categories',
+    'api.analytics',
 ]
 
 # Полный список установленных приложений
@@ -132,26 +133,13 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 # ==================== НАСТРОЙКИ БАЗЫ ДАННЫХ ====================
 
-if DEBUG:
-    # Для разработки - SQLite (DEBUG=True)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
-else:
-    # Для продакшена - PostgreSQL (DEBUG=False)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME'),
-            'USER': config('DB_USER'),
-            'PASSWORD': config('DB_PASSWORD'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
-        }
-    }
+}
 
 # ==================== REST FRAMEWORK ====================
 

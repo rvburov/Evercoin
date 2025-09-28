@@ -1,157 +1,217 @@
 # evercoin/backend/api/operations/models.py
-from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
 from django.db import models
+from django.core.validators import MinValueValidator
+from django.contrib.auth import get_user_model
 from django.utils import timezone
-
-from api.categories.models import Category
-from api.wallets.models import Wallet
+from api.core.constants.currencies import CURRENCIES
 
 User = get_user_model()
 
 
 class Operation(models.Model):
-    """Модель финансовой операции (доход/расход/перевод)."""
-
-    OPERATION_TYPES = (
+    """
+    Модель финансовой операции (доход, расход, перевод)
+    """
+    
+    OPERATION_TYPES = [
         ('income', 'Доход'),
         ('expense', 'Расход'),
         ('transfer', 'Перевод'),
-    )
-
+    ]
+    
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
+        User, 
+        on_delete=models.CASCADE, 
         related_name='operations',
         verbose_name='Пользователь'
     )
+    
+    title = models.CharField(
+        max_length=200, 
+        verbose_name='Название операции'
+    )
+    
     amount = models.DecimalField(
-        max_digits=15,
+        max_digits=12,
         decimal_places=2,
         validators=[MinValueValidator(0.01)],
-        verbose_name='Сумма'
+        verbose_name='Сумма операции'
     )
-    title = models.CharField(
-        max_length=255,
-        verbose_name='Название'
-    )
+    
     description = models.TextField(
-        blank=True,
+        blank=True, 
         null=True,
-        verbose_name='Описание'
+        verbose_name='Комментарий к операции'
     )
+    
     operation_type = models.CharField(
         max_length=10,
         choices=OPERATION_TYPES,
         verbose_name='Тип операции'
     )
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='operations',
-        verbose_name='Категория'
-    )
-    wallet = models.ForeignKey(
-        Wallet,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='operations',
-        verbose_name='Счет'
-    )
-    date = models.DateTimeField(
+    
+    operation_date = models.DateTimeField(
         default=timezone.now,
         verbose_name='Дата операции'
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
+    
+    wallet = models.ForeignKey(
+        'wallets.Wallet',
+        on_delete=models.CASCADE,
+        related_name='operations',
+        verbose_name='Счет операции'
     )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='Дата обновления'
-    )
-    is_recurring = models.BooleanField(
-        default=False,
-        verbose_name='Повторяющаяся операция'
-    )
-    recurring_pattern = models.JSONField(
-        null=True,
+    
+    category = models.ForeignKey(
+        'categories.Category',
+        on_delete=models.SET_NULL,
         blank=True,
-        verbose_name='Паттерн повторения'
+        null=True,
+        related_name='operations',
+        verbose_name='Категория операции'
     )
-
+    
+    # Для переводов между счетами
+    transfer_to_wallet = models.ForeignKey(
+        'wallets.Wallet',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='transfer_operations',
+        verbose_name='Счет назначения (для переводов)'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        ordering = ['-date', '-created_at']
-        indexes = [
-            models.Index(fields=['user', 'date']),
-            models.Index(fields=['user', 'operation_type']),
-            models.Index(fields=['user', 'category']),
-            models.Index(fields=['user', 'wallet']),
-        ]
         verbose_name = 'Операция'
         verbose_name_plural = 'Операции'
-
+        ordering = ['-operation_date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'operation_date']),
+            models.Index(fields=['operation_type']),
+            models.Index(fields=['wallet']),
+            models.Index(fields=['category']),
+        ]
+    
     def __str__(self):
-        return f"{self.user.email} - {self.title} - {self.amount}"
-
+        return f"{self.title} - {self.amount} ({self.operation_type})"
+    
     def save(self, *args, **kwargs):
-        """Автоматическое обновление баланса кошелька при сохранении."""
-        super().save(*args, **kwargs)
-
+        """
+        Переопределение сохранения для обновления баланса счета
+        """
+        from django.db import transaction
+        
+        with transaction.atomic():
+            # Получаем старую операцию для сравнения
+            old_operation = None
+            if self.pk:
+                try:
+                    old_operation = Operation.objects.get(pk=self.pk)
+                except Operation.DoesNotExist:
+                    pass
+            
+            # Сохраняем операцию
+            super().save(*args, **kwargs)
+            
+            # Обновляем баланс счета
+            self._update_wallet_balance(old_operation)
+    
     def delete(self, *args, **kwargs):
-        """Возврат суммы в кошелек при удалении операции."""
-        super().delete(*args, **kwargs)
-
-
-class OperationLog(models.Model):
-    """Модель для логирования действий с операциями."""
-
-    ACTION_CHOICES = (
-        ('create', 'Создание'),
-        ('update', 'Обновление'),
-        ('delete', 'Удаление'),
-        ('duplicate', 'Дублирование'),
-    )
-
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='operation_logs',
-        verbose_name='Пользователь'
-    )
-    operation = models.ForeignKey(
-        Operation,
-        on_delete=models.CASCADE,
-        related_name='logs',
-        verbose_name='Операция'
-    )
-    action = models.CharField(
-        max_length=10,
-        choices=ACTION_CHOICES,
-        verbose_name='Действие'
-    )
-    old_data = models.JSONField(
-        null=True,
-        blank=True,
-        verbose_name='Старые данные'
-    )
-    new_data = models.JSONField(
-        null=True,
-        blank=True,
-        verbose_name='Новые данные'
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
-    )
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'Лог операции'
-        verbose_name_plural = 'Логи операций'
-
-    def __str__(self):
-        return f"{self.user.email} - {self.action} - {self.operation.title}"
+        """
+        Переопределение удаления для обновления баланса счета
+        """
+        from django.db import transaction
+        
+        with transaction.atomic():
+            # Сохраняем данные для обновления баланса
+            wallet = self.wallet
+            amount = self.amount
+            operation_type = self.operation_type
+            
+            # Удаляем операцию
+            super().delete(*args, **kwargs)
+            
+            # Обновляем баланс счета
+            if operation_type == 'income':
+                wallet.balance -= amount
+            elif operation_type == 'expense':
+                wallet.balance += amount
+            # Для переводов баланс уже обновлен в операции назначения
+            
+            wallet.save()
+    
+    def _update_wallet_balance(self, old_operation=None):
+        """
+        Внутренний метод для обновления баланса счета
+        """
+        wallet = self.wallet
+        
+        if old_operation:
+            # Откатываем старую операцию
+            old_amount = old_operation.amount
+            old_type = old_operation.operation_type
+            
+            if old_type == 'income':
+                wallet.balance -= old_amount
+            elif old_type == 'expense':
+                wallet.balance += old_amount
+        
+        # Применяем новую операцию
+        if self.operation_type == 'income':
+            wallet.balance += self.amount
+        elif self.operation_type == 'expense':
+            wallet.balance -= self.amount
+        
+        wallet.save()
+        
+        # Для переводов создаем вторую операцию
+        if self.operation_type == 'transfer' and self.transfer_to_wallet:
+            self._create_transfer_operation()
+    
+    def _create_transfer_operation(self):
+        """
+        Создание парной операции для перевода между счетами
+        """
+        # Проверяем, не создана ли уже парная операция
+        if not hasattr(self, 'paired_transfer'):
+            Operation.objects.create(
+                user=self.user,
+                title=f"Перевод: {self.title}",
+                amount=self.amount,
+                description=self.description,
+                operation_type='income',  # Для счета назначения это доход
+                operation_date=self.operation_date,
+                wallet=self.transfer_to_wallet,
+                category=None,
+                transfer_to_wallet=None  # Избегаем рекурсии
+            )
+    
+    def clean(self):
+        """
+        Валидация данных перед сохранением
+        """
+        from django.core.exceptions import ValidationError
+        
+        # Проверка, что пользователь является владельцем счета
+        if self.wallet.user != self.user:
+            raise ValidationError({'wallet': 'Вы не являетесь владельцем этого счета'})
+        
+        # Проверка категории
+        if self.category and self.category.user != self.user:
+            raise ValidationError({'category': 'Вы не являетесь владельцем этой категории'})
+        
+        # Проверка счета назначения для переводов
+        if self.operation_type == 'transfer':
+            if not self.transfer_to_wallet:
+                raise ValidationError({'transfer_to_wallet': 'Для перевода необходимо указать счет назначения'})
+            if self.transfer_to_wallet.user != self.user:
+                raise ValidationError({'transfer_to_wallet': 'Вы не являетесь владельцем счета назначения'})
+            if self.wallet == self.transfer_to_wallet:
+                raise ValidationError({'transfer_to_wallet': 'Нельзя переводить на тот же счет'})
+        
+        # Проверка баланса для расходов
+        if self.operation_type == 'expense' and self.amount > self.wallet.balance:
+            raise ValidationError({'amount': 'На счету недостаточно средств'})

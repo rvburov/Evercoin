@@ -1,202 +1,319 @@
 # evercoin/backend/api/wallets/views.py
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework import generics, status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Sum
-from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
+from django.db import transaction, models
+from django.shortcuts import get_object_or_404
 
 from .models import Wallet, WalletTransfer
 from .serializers import (
     WalletSerializer,
     WalletCreateSerializer,
+    WalletUpdateSerializer,
+    WalletListSerializer,
     WalletTransferSerializer,
-    WalletSummarySerializer,
-    WalletOperationSerializer,
+    WalletBalanceSerializer,
+    WalletDeleteSerializer
 )
-from api.operations.models import Operation
+from .filters import WalletFilter
 
 
-class WalletViewSet(viewsets.ModelViewSet):
-    """ViewSet для управления счетами пользователя."""
-    
+class WalletListView(generics.ListAPIView):
+    """
+    API endpoint для получения списка счетов пользователя
+    """
+    serializer_class = WalletListSerializer
     permission_classes = [IsAuthenticated]
-    serializer_class = WalletSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_class = WalletFilter
+    ordering_fields = ['name', 'balance', 'created_at']
+    ordering = ['-is_default', '-created_at']
+    search_fields = ['name', 'description']
     
     def get_queryset(self):
-        """Возвращает счета текущего пользователя."""
-        return Wallet.objects.filter(
-            user=self.request.user
-        ).prefetch_related('operations')
+        """
+        Возвращает счета только текущего пользователя
+        """
+        return Wallet.objects.filter(user=self.request.user)
+
+
+class WalletDetailView(generics.RetrieveAPIView):
+    """
+    API endpoint для получения деталей конкретного счета
+    """
+    serializer_class = WalletSerializer
+    permission_classes = [IsAuthenticated]
     
-    def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от действия."""
-        if self.action in ['create']:
-            return WalletCreateSerializer
-        return WalletSerializer
+    def get_queryset(self):
+        """
+        Возвращает счета только текущего пользователя
+        """
+        return Wallet.objects.filter(user=self.request.user)
+
+
+class WalletCreateView(generics.CreateAPIView):
+    """
+    API endpoint для создания нового счета
+    """
+    serializer_class = WalletCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class WalletUpdateView(generics.UpdateAPIView):
+    """
+    API endpoint для обновления существующего счета
+    """
+    serializer_class = WalletUpdateSerializer
+    permission_classes = [IsAuthenticated]
     
-    def perform_create(self, serializer):
-        """Создание счета с привязкой к пользователю."""
-        serializer.save(user=self.request.user)
+    def get_queryset(self):
+        """
+        Возвращает счета только текущего пользователя
+        """
+        return Wallet.objects.filter(user=self.request.user)
+
+
+class WalletDeleteView(generics.DestroyAPIView):
+    """
+    API endpoint для удаления счета с обработкой связанных операций
+    """
+    permission_classes = [IsAuthenticated]
     
-    @action(detail=False, methods=['get'])
-    def summary(self, request):
-        """Сводная информация по всем счетам."""
-        wallets = self.get_queryset()
+    def get_queryset(self):
+        """
+        Возвращает счета только текущего пользователя
+        """
+        return Wallet.objects.filter(user=self.request.user)
+    
+    def delete(self, request, *args, **kwargs):
+        """
+        Обработка удаления счета с опциями переноса операций
+        """
+        wallet = self.get_object()
+        serializer = WalletDeleteSerializer(data=request.data, context={'request': request})
         
-        total_balance = wallets.aggregate(total=Sum('balance'))['total'] or 0
+        if serializer.is_valid():
+            return self._delete_wallet_with_options(wallet, serializer.validated_data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def _delete_wallet_with_options(self, wallet, options):
+        """
+        Удаление счета с выбранными опциями
+        """
+        from api.operations.models import Operation
         
-        visible_balance = wallets.filter(
-            exclude_from_total=False
-        ).aggregate(total=Sum('balance'))['total'] or 0
+        transfer_to_id = options.get('transfer_operations_to')
+        delete_operations = options.get('delete_operations', False)
         
+        try:
+            with transaction.atomic():
+                # Проверяем наличие операций
+                operation_count = wallet.operations.count()
+                transfer_operation_count = wallet.transfer_operations.count()
+                total_operations = operation_count + transfer_operation_count
+                
+                if total_operations == 0:
+                    # Если операций нет, просто удаляем счет
+                    wallet.delete()
+                    return Response(
+                        {'message': 'Счет успешно удален'}, 
+                        status=status.HTTP_200_OK
+                    )
+                
+                if delete_operations:
+                    # Удаляем все операции счета
+                    wallet.operations.all().delete()
+                    wallet.transfer_operations.all().delete()
+                    wallet.delete()
+                    return Response(
+                        {'message': f'Счет и {total_operations} операций успешно удалены'}, 
+                        status=status.HTTP_200_OK
+                    )
+                
+                if transfer_to_id:
+                    # Переносим операции на другой счет
+                    transfer_to_wallet = Wallet.objects.get(pk=transfer_to_id, user=self.request.user)
+                    
+                    # Обновляем операции
+                    Operation.objects.filter(wallet=wallet).update(wallet=transfer_to_wallet)
+                    Operation.objects.filter(transfer_to_wallet=wallet).update(transfer_to_wallet=transfer_to_wallet)
+                    
+                    wallet.delete()
+                    return Response(
+                        {'message': f'Счет удален, операции перенесены на {transfer_to_wallet.name}'}, 
+                        status=status.HTTP_200_OK
+                    )
+                
+                # Если не выбрана опция, возвращаем ошибку
+                return Response(
+                    {
+                        'error': 'Нельзя удалить счет с привязанными операциями',
+                        'operation_count': total_operations,
+                        'options': {
+                            'transfer_operations_to': 'ID счета для переноса операций',
+                            'delete_operations': 'Удалить все операции счета'
+                        }
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Ошибка при удалении счета: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class WalletTransferView(generics.CreateAPIView):
+    """
+    API endpoint для перевода средств между счетами
+    """
+    serializer_class = WalletTransferSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class WalletBalanceView(generics.GenericAPIView):
+    """
+    API endpoint для получения общего баланса по всем счетам
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Получение общего баланса пользователя
+        """
+        wallets = Wallet.objects.filter(user=request.user)
+        
+        # Общий баланс всех счетов
+        total_balance = wallets.aggregate(
+            total=models.Sum('balance')
+        )['total'] or 0
+        
+        # Баланс видимых счетов
+        visible_balance = wallets.filter(is_hidden=False).aggregate(
+            total=models.Sum('balance')
+        )['total'] or 0
+        
+        # Баланс скрытых счетов
+        hidden_balance = wallets.filter(is_hidden=True).aggregate(
+            total=models.Sum('balance')
+        )['total'] or 0
+        
+        # Основная валюта (валюта счета по умолчанию или первого счета)
         default_wallet = wallets.filter(is_default=True).first()
+        if default_wallet:
+            currency = default_wallet.currency
+        elif wallets.exists():
+            currency = wallets.first().currency
+        else:
+            currency = 'RUB'
         
         data = {
             'total_balance': total_balance,
             'visible_balance': visible_balance,
+            'hidden_balance': hidden_balance,
             'wallet_count': wallets.count(),
-            'default_wallet': WalletSerializer(
-                default_wallet
-            ).data if default_wallet else None,
+            'currency': currency
         }
         
-        serializer = WalletSummarySerializer(data)
+        serializer = WalletBalanceSerializer(data)
         return Response(serializer.data)
+
+
+class WalletSetDefaultView(generics.GenericAPIView):
+    """
+    API endpoint для установки счета по умолчанию
+    """
+    permission_classes = [IsAuthenticated]
     
-    @action(detail=True, methods=['get'])
-    def operations(self, request, pk=None):
-        """Операции по конкретному счету с фильтрацией по периоду."""
-        wallet = self.get_object()
+    def post(self, request, pk, *args, **kwargs):
+        """
+        Установка счета как счета по умолчанию
+        """
+        wallet = get_object_or_404(Wallet, pk=pk, user=request.user)
         
-        period = request.query_params.get('period', 'all')
-        limit = int(request.query_params.get('limit', 20))
-        offset = int(request.query_params.get('offset', 0))
+        with transaction.atomic():
+            # Снимаем флаг default со всех счетов
+            Wallet.objects.filter(user=request.user, is_default=True).update(is_default=False)
+            # Устанавливаем флаг default для выбранного счета
+            wallet.is_default = True
+            wallet.save()
         
-        queryset = Operation.objects.filter(wallet=wallet)
+        serializer = WalletSerializer(wallet)
+        return Response(serializer.data)
+
+
+class WalletHistoryView(generics.GenericAPIView):
+    """
+    API endpoint для получения истории баланса счета
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk, *args, **kwargs):
+        """
+        Получение истории баланса счета за указанный период
+        """
+        wallet = get_object_or_404(Wallet, pk=pk, user=request.user)
         
-        if period != 'all':
-            now = timezone.now()
-            if period == 'month':
-                start_date = now.replace(
-                    day=1, hour=0, minute=0, second=0, microsecond=0
-                )
-                queryset = queryset.filter(date__gte=start_date)
-            elif period == 'week':
-                start_date = now - timezone.timedelta(days=now.weekday())
-                start_date = start_date.replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
-                queryset = queryset.filter(date__gte=start_date)
-            elif period == 'day':
-                start_date = now.replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
-                queryset = queryset.filter(date__gte=start_date)
+        # Получаем количество дней из параметра запроса
+        days = int(request.query_params.get('days', 30))
+        days = min(days, 365)  # Ограничиваем максимальный период
         
-        total_count = queryset.count()
-        operations = queryset.select_related(
-            'category'
-        ).order_by('-date')[offset:offset + limit]
-        
-        serializer = WalletOperationSerializer(operations, many=True)
+        history = wallet.get_balance_history(days=days)
         
         return Response({
-            'results': serializer.data,
-            'count': total_count,
-            'next_offset': offset + limit if offset + limit < total_count else None,
-            'previous_offset': offset - limit if offset > 0 else None,
+            'wallet_id': wallet.id,
+            'wallet_name': wallet.name,
+            'period_days': days,
+            'history': history
         })
-    
-    @action(detail=True, methods=['post'])
-    def set_default(self, request, pk=None):
-        """Установка счета по умолчанию."""
-        wallet = self.get_object()
-        wallet.is_default = True
-        wallet.save()
-        
-        serializer = self.get_serializer(wallet)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'])
-    def update_balance(self, request, pk=None):
-        """Ручное обновление баланса счета."""
-        wallet = self.get_object()
-        new_balance = request.data.get('balance')
-        
-        if new_balance is None:
-            return Response(
-                {"error": "Параметр balance обязателен"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        
-        try:
-            new_balance = float(new_balance)
-            if new_balance < 0:
-                return Response(
-                    {"error": "Баланс не может быть отрицательным"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        except (ValueError, TypeError):
-            return Response(
-                {"error": "Некорректное значение баланса"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        
-        wallet.balance = new_balance
-        wallet.save()
-        
-        serializer = self.get_serializer(wallet)
-        return Response(serializer.data)
 
 
-class WalletTransferViewSet(viewsets.ModelViewSet):
-    """ViewSet для управления переводами между счетами."""
+@api_view(['GET'])
+@transaction.atomic
+def wallet_statistics(request):
+    """
+    API endpoint для получения статистики по всем счетам
+    """
+    wallets = Wallet.objects.filter(user=request.user)
     
-    permission_classes = [IsAuthenticated]
-    serializer_class = WalletTransferSerializer
+    # Статистика по валютам
+    currency_stats = (
+        wallets.values('currency')
+        .annotate(
+            total_balance=models.Sum('balance'),
+            wallet_count=models.Count('id'),
+            visible_balance=models.Sum('balance', filter=models.Q(is_hidden=False)),
+            hidden_balance=models.Sum('balance', filter=models.Q(is_hidden=True))
+        )
+        .order_by('-total_balance')
+    )
     
-    def get_queryset(self):
-        """Возвращает переводы текущего пользователя."""
-        return WalletTransfer.objects.filter(
-            user=self.request.user
-        ).select_related('from_wallet', 'to_wallet')
+    # Самые активные счета (по количеству операций)
+    from api.operations.models import Operation
+    active_wallets = (
+        wallets.annotate(operation_count=models.Count('operations'))
+        .order_by('-operation_count')[:5]
+    )
     
-    def perform_create(self, serializer):
-        """Создание перевода с обработкой ошибок."""
-        try:
-            serializer.save(user=self.request.user)
-        except ValueError as e:
-            if str(e) == "На исходном счете недостаточно средств":
-                from rest_framework.exceptions import ValidationError
-                raise ValidationError(
-                    {"detail": "На исходном счете недостаточно средств"}
-                )
-            raise
+    active_wallets_data = [
+        {
+            'id': wallet.id,
+            'name': wallet.name,
+            'operation_count': wallet.operation_count,
+            'balance': wallet.balance,
+            'currency': wallet.currency
+        }
+        for wallet in active_wallets
+    ]
     
-    @action(detail=False, methods=['get'])
-    def recent_transfers(self, request):
-        """Последние переводы между счетами."""
-        limit = int(request.query_params.get('limit', 10))
-        transfers = self.get_queryset().order_by('-created_at')[:limit]
-        
-        serializer = self.get_serializer(transfers, many=True)
-        return Response(serializer.data)
-
-
-class WalletConstantsViewSet(viewsets.ViewSet):
-    """ViewSet для получения констант (иконки, цвета)."""
-    
-    permission_classes = [IsAuthenticated]
-    
-    @action(detail=False, methods=['get'])
-    def icons(self, request):
-        """Список доступных иконок для счетов."""
-        from api.core.constants.icons import WALLET_ICONS
-        return Response(WALLET_ICONS)
-    
-    @action(detail=False, methods=['get'])
-    def colors(self, request):
-        """Список доступных цветов для счетов."""
-        from api.core.constants.colors import COLORS
-        return Response(COLORS)
+    return Response({
+        'currency_statistics': list(currency_stats),
+        'most_active_wallets': active_wallets_data,
+        'total_wallets': wallets.count(),
+        'default_currency': wallets.filter(is_default=True).first().currency if wallets.filter(is_default=True).exists() else 'RUB'
+    })

@@ -21,6 +21,9 @@ urlpatterns = [
     # Категории
     path('api/categories/', include('api.categories.urls')),
     
+    # Аналитика
+    path('api/analytics/', include('api.analytics.urls')),
+
     # Документация API
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

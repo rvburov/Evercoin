@@ -1,29 +1,43 @@
 # evercoin/backend/api/wallets/validators.py
-from rest_framework import serializers
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 
-def validate_wallet_name_uniqueness(user, name, exclude_pk=None):
-    """Проверка уникальности названия счета для пользователя."""
-    queryset = user.wallets.all()
-    if exclude_pk:
-        queryset = queryset.exclude(pk=exclude_pk)
+def validate_wallet_name_unique_per_user(value, user):
+    """
+    Валидация уникальности названия счета для пользователя
+    """
+    from .models import Wallet
     
-    if queryset.filter(name=name).exists():
-        raise serializers.ValidationError(
-            "Счет с таким названием уже существует"
-        )
-    return name
+    if Wallet.objects.filter(user=user, name=value).exists():
+        raise ValidationError(_('У вас уже есть счет с таким названием'))
 
 
-def validate_positive_balance(value):
-    """Проверка что баланс не отрицательный."""
+def validate_positive_initial_balance(value):
+    """
+    Валидация положительного начального баланса
+    """
     if value < 0:
-        raise serializers.ValidationError("Баланс не может быть отрицательным")
-    return value
+        raise ValidationError(_('Начальный баланс не может быть отрицательным'))
 
 
-def validate_sufficient_balance(wallet, amount):
-    """Проверка достаточности средств на счете."""
-    if wallet.balance < amount:
-        raise serializers.ValidationError("На счете недостаточно средств")
-    return True
+def validate_wallet_currency(value):
+    """
+    Валидация валюты счета
+    """
+    from api.core.constants.currencies import CURRENCY_CHOICES
+    
+    valid_currencies = [currency[0] for currency in CURRENCY_CHOICES]
+    if value not in valid_currencies:
+        raise ValidationError(_('Недопустимая валюта счета'))
+
+
+def validate_transfer_amount(value):
+    """
+    Валидация суммы перевода
+    """
+    if value <= 0:
+        raise ValidationError(_('Сумма перевода должна быть положительной'))
+    
+    if value > 1000000:  # Максимальная сумма перевода
+        raise ValidationError(_('Сумма перевода слишком велика'))

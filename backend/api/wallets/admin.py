@@ -1,89 +1,104 @@
 # evercoin/backend/api/wallets/admin.py
 from django.contrib import admin
-
 from .models import Wallet, WalletTransfer
 
 
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
-    """Админ-панель для счетов."""
-    
+    """
+    Админ-панель для счетов
+    """
     list_display = [
-        'user',
-        'name',
-        'balance',
-        'currency',
-        'is_default',
-        'exclude_from_total',
-        'created_at',
+        'name', 
+        'user', 
+        'balance', 
+        'currency', 
+        'is_default', 
+        'is_hidden',
+        'created_at'
     ]
+    
     list_filter = [
-        'is_default',
-        'exclude_from_total',
-        'currency',
-        'created_at',
+        'currency', 
+        'is_default', 
+        'is_hidden',
+        'created_at'
     ]
+    
     search_fields = [
-        'name',
+        'name', 
         'user__email',
+        'user__username',
+        'description'
     ]
-    readonly_fields = [
-        'created_at',
-        'updated_at',
-    ]
+    
+    readonly_fields = ['created_at', 'updated_at', 'initial_balance']
     
     fieldsets = (
         ('Основная информация', {
             'fields': (
-                'user',
-                'name',
-                'balance',
+                'user', 
+                'name', 
+                'balance', 
                 'currency',
-            ),
+                'initial_balance'
+            )
         }),
         ('Внешний вид', {
             'fields': (
                 'icon',
-                'color',
-            ),
+                'color'
+            )
         }),
         ('Настройки', {
             'fields': (
                 'is_default',
-                'exclude_from_total',
-            ),
+                'is_hidden',
+                'description'
+            )
         }),
-        ('Даты', {
+        ('Системная информация', {
             'fields': (
                 'created_at',
-                'updated_at',
+                'updated_at'
             ),
+            'classes': ('collapse',)
         }),
     )
+    
+    def get_queryset(self, request):
+        """
+        Оптимизация запроса для админки
+        """
+        return super().get_queryset(request).select_related('user')
 
 
 @admin.register(WalletTransfer)
 class WalletTransferAdmin(admin.ModelAdmin):
-    """Админ-панель для переводов между счетами."""
-    
+    """
+    Админ-панель для переводов между счетами
+    """
     list_display = [
+        'from_wallet', 
+        'to_wallet', 
+        'amount', 
         'user',
-        'from_wallet',
-        'to_wallet',
-        'amount',
-        'created_at',
+        'transfer_date'
     ]
+    
     list_filter = [
-        'created_at',
+        'transfer_date',
+        'created_at'
     ]
+    
     search_fields = [
         'from_wallet__name',
         'to_wallet__name',
         'user__email',
+        'description'
     ]
-    readonly_fields = [
-        'created_at',
-    ]
+    
+    readonly_fields = ['created_at']
     
     fieldsets = (
         ('Информация о переводе', {
@@ -93,11 +108,17 @@ class WalletTransferAdmin(admin.ModelAdmin):
                 'to_wallet',
                 'amount',
                 'description',
-            ),
+                'transfer_date'
+            )
         }),
-        ('Дата', {
-            'fields': (
-                'created_at',
-            ),
+        ('Системная информация', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
         }),
     )
+    
+    def get_queryset(self, request):
+        """
+        Оптимизация запроса для админки
+        """
+        return super().get_queryset(request).select_related('user', 'from_wallet', 'to_wallet')
