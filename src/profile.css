@@ -1,11 +1,11 @@
 .profile-screen {
   min-height: 100dvh;
   position: relative;
-  background: #f7f6fc;
-  color: #707079;
+  background: var(--bg);
+  color: var(--fg-2);
 }
 .profile-screen .screen-topbar {
-  background: #faf9ff;
+  background: var(--surface);
 }
 .profile-choices {
   padding-top: calc(39.3dvh - 50px);
@@ -20,14 +20,15 @@
   padding: 10px 12px;
   color: white;
   font-family: inherit;
-  font-weight: 300;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: var(--fs-md);
+  letter-spacing: 0.06em;
 }
 .profile-create {
-  background: linear-gradient(#25d990, #11ce94);
+  background: var(--accent);
 }
 .profile-login {
-  background: linear-gradient(#7c7992, #706d85);
+  background: var(--panel);
 }
 .profile-form {
   padding: 58px 18px 25px;
@@ -39,28 +40,28 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  font-size: 13px;
-  color: #898794;
+  font-size: var(--fs-sm);
+  color: var(--fg-3);
 }
 .profile-form input {
   width: 100%;
   min-height: 42px;
   padding: 9px 0;
   border: 0;
-  border-bottom: 1px solid #d7d5df;
-  color: #67636f;
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--fg);
   background: transparent;
   font: inherit;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   border-radius: 0;
 }
 .profile-form input::placeholder {
-  color: #b6b3bf;
+  color: var(--fg-3);
 }
 .profile-local-note {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.5;
-  color: #a19eab;
+  color: var(--fg-3);
   margin: 0;
 }
 .profile-form .profile-save {
@@ -70,13 +71,13 @@
   min-height: 46px;
   padding: 10px;
   color: white;
-  background: #12ce94;
+  background: var(--accent);
   font: inherit;
-  font-size: 16px;
-  font-weight: 300;
+  font-size: var(--fs-lg);
+  font-weight: 600;
 }
 .profile-form-error {
-  color: #c84b63;
-  font-size: 13px;
+  color: var(--bad-ink);
+  font-size: var(--fs-sm);
   margin: 0;
 }

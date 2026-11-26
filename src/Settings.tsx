@@ -108,7 +108,7 @@ export default function Settings({
         <div className="settings-group">
           <SettingsRow
             icon={<Coins />}
-            color="#5bd675"
+            color="var(--s3)"
             label="Валюта по умолчанию"
             onClick={() => notify("В макете используется рубль RUB")}
           >
@@ -116,7 +116,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<MessageCircle />}
-            color="#55aff4"
+            color="var(--s1)"
             label="Язык"
             onClick={() => notify("Язык макета — русский")}
           >
@@ -124,7 +124,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<ArrowDownToLine />}
-            color="#ff9b00"
+            color="var(--s4)"
             label="Экспорт"
             onClick={onExport}
           >
@@ -132,7 +132,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<Bell />}
-            color="#e96bdf"
+            color="var(--s5)"
             label="Уведомления"
             checked={preferences.notifications}
             onClick={() => toggle("notifications")}
@@ -141,7 +141,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<KeyRound />}
-            color="#f46590"
+            color="var(--s8)"
             label="Пароль"
             checked={preferences.password}
             onClick={() => toggle("password")}
@@ -150,7 +150,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<Timer />}
-            color="#6747a7"
+            color="var(--s7)"
             label="3 мин. без пароля"
             checked={preferences.gracePeriod}
             onClick={() => toggle("gracePeriod")}
@@ -162,7 +162,7 @@ export default function Settings({
         <div className="settings-group">
           <SettingsRow
             icon={<CalendarDays />}
-            color="#f4d63e"
+            color="var(--warn)"
             label="Период"
             onClick={() => setPeriodDialog(true)}
           >
@@ -176,7 +176,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<ArrowRight />}
-            color="#fb715f"
+            color="var(--s2)"
             label="Начало"
             onClick={() => setDateDialog(true)}
           >
@@ -187,7 +187,7 @@ export default function Settings({
         <div className="settings-group">
           <SettingsRow
             icon={<PiggyBank />}
-            color="#65dec5"
+            color="var(--s3)"
             label="Показывать бюджет"
             checked={preferences.showBudget}
             onClick={() => toggle("showBudget")}
@@ -196,7 +196,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<Palette />}
-            color="#f68db2"
+            color="var(--s5)"
             label="Цветные перерасходы"
             checked={preferences.colorOverspend}
             onClick={() => toggle("colorOverspend")}
@@ -205,7 +205,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<Volume2 />}
-            color="#9487eb"
+            color="var(--s7)"
             label="Звуки"
             checked={preferences.sounds}
             onClick={() => toggle("sounds")}
@@ -214,7 +214,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<ScrollText />}
-            color="#f38d79"
+            color="var(--s2)"
             label="Ежедневные отчеты"
             checked={preferences.dailyReports}
             onClick={() => toggle("dailyReports")}
@@ -223,7 +223,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<Type />}
-            color="#007f9d"
+            color="var(--accent)"
             label="Увеличенные шрифты"
             checked={preferences.largeFonts}
             onClick={() => toggle("largeFonts")}
@@ -232,7 +232,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<Radio />}
-            color="#c27ae3"
+            color="var(--s7)"
             label="Источники доходов"
             checked={preferences.incomeVisible}
             onClick={() => toggle("incomeVisible")}
@@ -241,7 +241,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<MessageCircle />}
-            color="#88bde9"
+            color="var(--s1)"
             label="Новости в Ленте"
             checked={preferences.news}
             onClick={() => toggle("news")}
@@ -253,7 +253,7 @@ export default function Settings({
         <div className="settings-group">
           <SettingsRow
             icon={<Clock3 />}
-            color="#ff742f"
+            color="var(--s2)"
             label="Долгий перерыв в учете"
             onClick={() => setBreakDialog(true)}
           >
@@ -261,7 +261,7 @@ export default function Settings({
           </SettingsRow>
           <SettingsRow
             icon={<RefreshCw />}
-            color="#f62338"
+            color="var(--s8)"
             label="Пересчитать балансы"
             onClick={() =>
               notify("Балансы пересчитаны по сохраненным операциям")

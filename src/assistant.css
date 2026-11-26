@@ -1,28 +1,31 @@
 .assistant-screen {
   min-height: 100dvh;
-  background: #f7f6fc;
-  color: #696974;
-  font-weight: 300;
-}
-.assistant-screen .screen-topbar h1 {
-  font-size: 21px;
+  background: var(--bg);
+  color: var(--fg-2);
   font-weight: 400;
 }
+.assistant-screen .screen-topbar h1 {
+  font-size: var(--fs-lg);
+}
 .assistant-screen .assistant-demo-label {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   padding: 4px 8px;
-  border: 1px solid #d9d8e1;
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
-  margin-right: 12px;
+  margin-right: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--fg-3);
 }
 .assistant-screen .assistant-content {
   padding: 22px 18px 155px;
 }
 .assistant-screen .assistant-introduction {
   margin: 0 0 24px;
-  font-size: 18px;
+  font-size: var(--fs-lg);
   line-height: 1.55;
   text-align: center;
+  color: var(--fg);
 }
 .assistant-screen .assistant-demo-button {
   display: flex;
@@ -31,20 +34,20 @@
   width: 100%;
   min-height: 52px;
   padding: 8px 12px;
-  background: #fff;
-  border: 1px solid #e4e3eb;
-  color: #696974;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--fg-2);
   border-radius: 4px;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 .assistant-screen .assistant-demo-button span {
   flex: 1;
   text-align: left;
 }
 .assistant-screen .assistant-demo-note {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.55;
-  color: #96959f;
+  color: var(--fg-3);
   margin: 12px 0 22px;
 }
 .assistant-screen .assistant-suggestions {
@@ -56,10 +59,10 @@
 .assistant-screen .assistant-suggestions button {
   min-height: 40px;
   padding: 7px 10px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   background: transparent;
-  border: 1px solid #dedde6;
-  color: #777681;
+  border: 1px solid var(--line-strong);
+  color: var(--fg-2);
   border-radius: 4px;
 }
 .assistant-screen .assistant-messages {
@@ -68,14 +71,14 @@
 }
 .assistant-screen .assistant-message {
   padding: 0 0 16px;
-  border-bottom: 1px solid #e5e4ed;
+  border-bottom: 1px solid var(--line);
 }
 .assistant-screen .assistant-message > span {
-  font-size: 11px;
-  color: #a09fa9;
+  font-size: var(--fs-2xs);
+  color: var(--fg-3);
 }
 .assistant-screen .assistant-message p {
-  font-size: 15px;
+  font-size: var(--fs-md);
   line-height: 1.55;
   margin: 5px 0 0;
   overflow-wrap: anywhere;
@@ -84,18 +87,18 @@
   padding-left: 25px;
 }
 .assistant-screen .assistant-message.user p {
-  color: #494854;
+  color: var(--fg);
 }
 .assistant-screen .assistant-proposal {
-  border: 1px solid #dedde6;
-  background: #fff;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
   padding: 15px 12px 0;
 }
 .assistant-screen .assistant-proposal-heading {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 15px;
+  font-size: var(--fs-md);
 }
 .assistant-screen .assistant-proposal-route {
   display: flex;
@@ -104,18 +107,20 @@
   flex-wrap: wrap;
   gap: 6px;
   margin: 22px 0 10px;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 .assistant-screen .assistant-proposal > strong {
   display: block;
   text-align: center;
-  font-weight: 300;
-  font-size: 28px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-2xl);
+  color: var(--fg);
   margin: 0 0 22px;
 }
 .assistant-screen .assistant-proposal-actions {
   display: flex;
-  border-top: 1px solid #ecebf2;
+  border-top: 1px solid var(--line);
   margin: 0 -12px;
 }
 .assistant-screen .assistant-proposal-actions button {
@@ -127,13 +132,13 @@
   flex: 1;
   border: 0;
   background: transparent;
-  color: #888792;
-  font-size: 12px;
+  color: var(--fg-3);
+  font-size: var(--fs-xs);
   padding: 8px;
 }
 .assistant-screen .assistant-proposal-actions button + button {
-  border-left: 1px solid #ecebf2;
-  color: #20b78f;
+  border-left: 1px solid var(--line);
+  color: var(--accent);
   flex: 1.5;
 }
 .assistant-screen .assistant-listening {
@@ -141,8 +146,8 @@
   justify-items: center;
   gap: 8px;
   padding: 16px 0;
-  color: #9998a2;
-  font-size: 13px;
+  color: var(--fg-3);
+  font-size: var(--fs-sm);
 }
 .assistant-screen .assistant-waveform {
   display: flex;
@@ -154,7 +159,7 @@
 .assistant-screen .assistant-waveform i {
   width: 3px;
   border-radius: 3px;
-  background: #20b78f;
+  background: var(--accent);
   animation: assistant-wave 0.7s ease-in-out infinite alternate;
 }
 .assistant-screen .assistant-composer-container {
@@ -163,8 +168,8 @@
   left: 50%;
   transform: translateX(-50%);
   width: min(100%, 480px);
-  background: #f7f6fc;
-  border-top: 1px solid #e5e4ed;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
   z-index: 15;
 }
@@ -172,7 +177,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  border-bottom: 1px solid #d6d5de;
+  border-bottom: 1px solid var(--line-strong);
   background: transparent;
 }
 .assistant-screen .assistant-composer input {
@@ -181,13 +186,13 @@
   min-height: 46px;
   border: 0;
   background: transparent;
-  color: #696974;
+  color: var(--fg);
   padding: 8px 2px;
-  font-size: 15px;
+  font-size: var(--fs-md);
   outline-offset: -2px;
 }
 .assistant-screen .assistant-composer input::placeholder {
-  color: #b5b4bd;
+  color: var(--fg-3);
 }
 .assistant-screen .assistant-composer button {
   display: grid;
@@ -197,22 +202,22 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #92919b;
+  color: var(--fg-3);
 }
 .assistant-screen .assistant-composer button[type="submit"] {
-  color: #20b78f;
+  color: var(--accent);
 }
 .assistant-screen .assistant-composer button:disabled {
   opacity: 0.35;
 }
 .assistant-screen .assistant-composer button.recording {
-  color: #fa4d63;
+  color: var(--bad);
   animation: assistant-record 1s ease-in-out infinite alternate;
 }
 .assistant-screen .assistant-composer-container > p {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   margin: 8px 0 0;
-  color: #aaa9b2;
+  color: var(--fg-3);
   text-align: center;
 }
 .assistant-screen .assistant-spin {
@@ -245,10 +250,10 @@
     padding-inline: 14px;
   }
   .assistant-screen .assistant-demo-button {
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
   .assistant-screen .assistant-introduction {
-    font-size: 17px;
+    font-size: var(--fs-lg);
   }
 }
 

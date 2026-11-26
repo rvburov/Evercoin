@@ -1,9 +1,9 @@
 .feed-screen {
   min-height: 100dvh;
-  color: #696974;
-  background: #f7f6fc;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-weight: 300;
+  color: var(--fg-2);
+  background: var(--bg);
+  font-family: var(--font-body);
+  font-weight: 400;
   padding-bottom: max(18px, env(safe-area-inset-bottom));
 }
 .feed-screen button,
@@ -24,7 +24,7 @@
   place-items: center;
   padding: 0;
   border: 0;
-  color: #797981;
+  color: var(--fg-3);
 }
 .feed-header {
   position: sticky;
@@ -34,9 +34,9 @@
   align-items: center;
   height: calc(48px + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) 6px 0;
-  background: #faf9fe;
+  background: var(--surface);
   gap: 2px;
-  border-bottom: 1px solid #eeedf2;
+  border-bottom: 1px solid var(--line);
 }
 .feed-filter-box {
   flex: 1;
@@ -44,7 +44,7 @@
   height: 29px;
   display: flex;
   align-items: center;
-  background: #f1f1f1;
+  background: var(--surface-2);
   position: relative;
   padding: 2px 23px 2px 4px;
 }
@@ -53,11 +53,11 @@
   background: transparent;
   width: 100%;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   outline: 0;
 }
 .feed-filter-box input::placeholder {
-  color: #bdbdc2;
+  color: var(--fg-3);
 }
 .feed-filter-chip {
   flex-shrink: 0;
@@ -66,21 +66,24 @@
   display: flex;
   gap: 14px;
   align-items: center;
-  color: #505057 !important;
-  font-size: 12px !important;
+  color: var(--fg) !important;
+  font-size: var(--fs-xs) !important;
   max-width: calc(100% - 4px);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .feed-filter-chip.income {
-  background: #20b9d4;
+  background: var(--info-soft);
+  color: var(--info-ink) !important;
 }
 .feed-filter-chip.account {
-  background: #ffd300;
+  background: var(--warn-soft);
+  color: var(--warn-ink) !important;
 }
 .feed-filter-chip.expense {
-  background: #ff6170;
+  background: var(--bad-soft);
+  color: var(--bad-ink) !important;
 }
 .feed-filter-chip svg {
   flex-shrink: 0;
@@ -101,7 +104,7 @@
   place-items: center;
 }
 .feed-clear svg {
-  background: #a5a5aa;
+  background: var(--fg-3);
   color: white;
   border-radius: 50%;
   padding: 1px;
@@ -110,8 +113,8 @@
   position: absolute;
   z-index: 15;
   top: calc(48px + env(safe-area-inset-top));
-  background: #fff;
-  box-shadow: 0 10px 20px #0002;
+  background: var(--surface);
+  box-shadow: 0 10px 20px rgba(16, 21, 17, 0.13);
   max-height: 65dvh;
   overflow: auto;
   left: 0;
@@ -123,8 +126,8 @@
   align-items: center;
   padding: 0 12px;
   gap: 7px;
-  background: #f5f4f8;
-  font-size: 12px;
+  background: var(--surface-2);
+  font-size: var(--fs-xs);
 }
 .feed-filter-panel-head .icon-button {
   margin-left: auto;
@@ -136,9 +139,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 1px solid #eee !important;
+  border-bottom: 1px solid var(--line) !important;
   text-align: left;
-  font-size: 13px !important;
+  font-size: var(--fs-sm) !important;
 }
 .feed-filter-option > span {
   flex: 1;
@@ -155,19 +158,23 @@
 .feed-edit-row button {
   width: 145px;
   min-height: 33px;
-  background: white;
+  background: var(--surface);
   border-radius: 11px;
-  box-shadow: 0 1px 3px #0002;
-  font-size: 13px;
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    0 1px 2px rgba(16, 21, 17, 0.12);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--fg);
 }
 .feed-report-heading {
-  background: white;
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   min-height: 51px;
-  border-top: 1px solid #efeff1;
-  border-bottom: 1px solid #efeff1;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   padding: 0 10px 0 13px;
 }
 .feed-report-heading > button:first-child {
@@ -176,22 +183,25 @@
   align-items: center;
   text-transform: uppercase;
   min-height: 44px;
-  font-size: 15px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--fg);
   text-align: left;
 }
 .feed-report-heading > button:first-child svg {
-  color: #c5c5c8;
-  fill: #c5c5c8;
+  color: var(--fg-3);
+  fill: var(--fg-3);
   width: 12px;
 }
 .feed-report-heading > .icon-button {
-  color: #c6c6c9;
+  color: var(--fg-3);
 }
 .feed-line-region {
   height: 208px;
   position: relative;
-  background: white;
-  border-bottom: 1px solid #efeff1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
   overflow: hidden;
 }
 .feed-line-chart {
@@ -201,11 +211,11 @@
   height: calc(100% - 28px);
 }
 .feed-gridline {
-  stroke: #f0f0f2;
+  stroke: var(--chart-grid);
   stroke-width: 1;
 }
 .feed-axis {
-  stroke: #c5c5c8;
+  stroke: var(--fg-3);
   stroke-width: 1;
 }
 .feed-chart-ticks {
@@ -217,9 +227,17 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  color: #8e8e95;
-  font-size: 9px;
+  color: var(--chart-muted);
+  font-size: var(--fs-2xs);
   pointer-events: none;
+}
+.feed-chart-ticks > span {
+  align-self: flex-start;
+  margin-left: -3px;
+  padding: 0 3px;
+  border-radius: 3px;
+  line-height: 1.4;
+  background: var(--surface);
 }
 .feed-chart-zoom {
   position: absolute;
@@ -231,14 +249,14 @@
   gap: 8px;
 }
 .feed-chart-zoom button {
-  background: #dddde0;
+  background: var(--surface-3);
   border-radius: 50%;
   width: 33px;
   height: 33px;
   min-height: 33px;
   display: grid;
   place-items: center;
-  font-weight: 300;
+  font-weight: 400;
   opacity: 0.85;
 }
 .feed-chart-zoom button:disabled {
@@ -252,25 +270,25 @@
   right: 0;
   display: flex;
   justify-content: space-around;
-  border-top: 1px solid #f0f0f2;
+  border-top: 1px solid var(--chart-grid);
 }
 .feed-chart-months > span {
   min-width: 0;
   padding: 0 1px;
-  font-size: 9px;
-  color: #bcbcc2;
+  font-size: var(--fs-2xs);
+  color: var(--fg-3);
   display: flex;
   align-items: center;
   white-space: nowrap;
 }
 .feed-donut-region {
   height: 208px;
-  background: white;
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--line);
 }
 .feed-donut {
   height: 166px;
@@ -284,7 +302,7 @@
   content: "";
   position: absolute;
   inset: 13px;
-  background: white;
+  background: var(--surface);
   border-radius: 50%;
 }
 .feed-donut > div {
@@ -295,12 +313,13 @@
   gap: 5px;
 }
 .feed-donut span {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 .feed-donut strong {
-  font-weight: 400;
-  font-size: 22px;
-  color: #35353b;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-xl);
+  color: var(--fg);
 }
 .feed-donut-labels {
   position: absolute;
@@ -308,7 +327,7 @@
   pointer-events: none;
 }
 .feed-donut-labels span {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   position: absolute;
 }
 .feed-donut-labels span:nth-child(1) {
@@ -332,28 +351,27 @@
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  background: white;
+  background: var(--surface);
   padding: 11px 10px 5px;
 }
 .feed-chart-controls > button {
-  border: 1px solid #ececef;
+  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  box-shadow: 0 0 2px #0001;
   min-height: 33px;
   flex: 1;
   max-width: 128px;
   padding: 4px 7px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 .feed-show-all {
-  background: white !important;
+  background: var(--surface) !important;
   width: 100%;
   min-height: 40px;
   display: flex;
   gap: 7px;
   align-items: center;
   justify-content: center;
-  font-size: 12px !important;
+  font-size: var(--fs-xs) !important;
 }
 .feed-show-all svg {
   transition: transform 0.15s;
@@ -362,23 +380,23 @@
   transform: rotate(180deg);
 }
 .feed-period-input {
-  background: white;
+  background: var(--surface);
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 14px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .feed-period-input input {
   max-width: 150px;
-  background: #f7f6fc;
-  border: 1px solid #e6e5eb;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
   min-height: 36px;
   padding: 4px;
 }
 .feed-summary {
-  border-top: 1px solid #eae9ee;
-  background: white;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
 }
 .feed-summary button {
   width: 100%;
@@ -391,52 +409,54 @@
 }
 .feed-summary button > span {
   flex: 1;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 .feed-summary button > svg {
-  color: #bbbcc1;
+  color: var(--fg-3);
 }
 .feed-summary button > small {
   width: 96px;
-  font-size: 10px;
-  color: #aaaab0;
+  font-size: var(--fs-2xs);
+  color: var(--fg-3);
 }
 .feed-summary button > strong {
   min-width: 94px;
   text-align: right;
-  font-weight: 300;
-  font-size: 12px;
+  font-weight: 500;
+  font-size: var(--fs-sm);
+  color: var(--fg);
 }
 .feed-screen .expense-text {
-  color: #d8464d;
+  color: var(--bad-ink);
 }
 .feed-screen .income-text {
-  color: #0c9b7c;
+  color: var(--good-ink);
 }
 .feed-total-row {
-  background: #fbfbfa;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
   min-height: 57px;
   display: flex;
   gap: 10px;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-top: 1px solid #eeedf0;
+  border-top: 1px solid var(--line);
 }
 .feed-total-row span {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 .feed-total-row small {
-  font-size: 14px;
-  color: #7f7f87;
+  font-size: var(--fs-md);
+  color: var(--fg-3);
 }
 .feed-total-row strong {
-  font-size: 14px;
-  font-weight: 300;
-  color: #44444c;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--fg);
 }
 .feed-breakdown {
-  background: white;
+  background: var(--surface);
   padding: 0 14px 8px;
 }
 .feed-breakdown button {
@@ -445,8 +465,8 @@
   align-items: center;
   gap: 8px;
   min-height: 38px;
-  border-top: 1px solid #efeff1;
-  font-size: 12px;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-xs);
   text-align: left;
 }
 .feed-breakdown button > i {
@@ -459,11 +479,11 @@
 }
 .feed-breakdown button > small {
   width: 33px;
-  color: #aaa;
+  color: var(--fg-3);
   text-align: right;
 }
 .feed-breakdown button > strong {
-  font-weight: 300;
+  font-weight: 400;
   min-width: 84px;
   text-align: right;
 }
@@ -471,25 +491,25 @@
   margin: 0;
 }
 .feed-day h2 {
-  background: #f7f6fc;
-  font-size: 15px;
-  font-weight: 300;
-  padding: 29px 10px 10px;
+  background: var(--bg);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--fg);
+  padding: 29px 12px 10px;
   min-height: 59px;
-  border-bottom: 1px solid #efeff2;
+  border-bottom: 1px solid var(--line);
   margin: 0;
-  letter-spacing: -0.25px;
 }
 .feed-operation {
   width: 100%;
   min-height: 69px;
-  background: white !important;
+  background: var(--surface) !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
   padding: 10px 19px !important;
-  border-bottom: 1px solid #dedee2 !important;
+  border-bottom: 1px solid var(--line) !important;
   text-align: left;
 }
 .feed-operation-names {
@@ -500,15 +520,15 @@
   max-width: 43%;
 }
 .feed-operation-names > small {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .feed-operation-names > strong {
-  font-size: 14px;
-  font-weight: 300;
-  color: #3d3d44;
+  font-size: var(--fs-md);
+  font-weight: 400;
+  color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -522,20 +542,20 @@
   gap: 6px;
 }
 .feed-operation-values > strong {
-  font-size: 15px;
-  font-weight: 300;
+  font-size: var(--fs-md);
+  font-weight: 500;
   white-space: nowrap;
 }
 .feed-operation-values > small {
   max-width: 100%;
-  font-size: 10px;
-  color: #92929a;
+  font-size: var(--fs-2xs);
+  color: var(--fg-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .feed-day-total {
-  background: #fbfbfa;
+  background: var(--bg);
   min-height: 65px;
   display: flex;
   justify-content: space-between;
@@ -553,27 +573,28 @@
   align-items: center;
 }
 .feed-day-total strong {
-  font-size: 16px;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
 }
 .feed-day-total span {
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .feed-empty {
   text-align: center;
   padding: 48px 12px;
-  font-size: 14px;
-  color: #a0a0a8;
+  font-size: var(--fs-md);
+  color: var(--fg-3);
 }
 .feed-news {
   margin: 35px 12px 12px;
-  border: 1px solid #e2e2e8;
-  background: #fff;
+  border: 1px solid var(--line);
+  background: var(--surface);
   padding: 15px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 .feed-news h3 {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 400;
   margin-bottom: 12px;
 }
@@ -584,7 +605,7 @@
   position: fixed;
   z-index: 70;
   inset: 0;
-  background: #0003;
+  background: var(--overlay);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -594,7 +615,7 @@
   width: min(100%, 464px);
 }
 .report-sheet-options {
-  background: #f4f4f5;
+  background: var(--surface);
   border-radius: 13px;
   overflow: hidden;
 }
@@ -602,20 +623,20 @@
   display: block;
   min-height: 54px;
   width: 100%;
-  color: #007aff;
-  font-size: 18px;
+  color: var(--accent-ink);
+  font-size: var(--fs-lg);
   border: 0;
-  font-weight: 300;
-  background: #f4f4f5;
+  font-weight: 400;
+  background: var(--surface);
 }
 .report-sheet-options button + button {
-  border-top: 1px solid #d0d0d4;
+  border-top: 1px solid var(--line);
 }
 .report-sheet-cancel {
   margin-top: 8px;
-  background: white !important;
+  background: var(--surface) !important;
   border-radius: 13px;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
 }
 @media (max-width: 365px) {
   .feed-summary button > small {
@@ -650,7 +671,7 @@
   position: absolute;
   inset: 4px;
   border-radius: 50%;
-  background: #dddde0;
+  background: var(--surface-3);
 }
 .feed-chart-zoom button > svg {
   position: relative;

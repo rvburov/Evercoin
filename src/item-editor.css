@@ -1,16 +1,22 @@
+/* Редактор счета, дохода и категории. Фон — по виду элемента. Текст, линии
+   и переключатели берутся из --editor-fg: на желтом фоне счета текст темный,
+   на синем и зеленом — белый. */
 .item-editor {
-  --editor-bg: #efa000;
+  --editor-bg: var(--account);
+  --editor-fg: var(--fg);
   min-height: 100dvh;
   background: var(--editor-bg);
-  color: rgba(255, 255, 255, 0.92);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  font-weight: 300;
+  color: var(--editor-fg);
+  font-family: var(--font-body);
+  font-weight: 400;
 }
 .item-editor.kind-expense {
-  --editor-bg: #21cf43;
+  --editor-bg: var(--accent);
+  --editor-fg: #fff;
 }
 .item-editor.kind-income {
-  --editor-bg: #20b9d4;
+  --editor-bg: var(--income);
+  --editor-fg: #fff;
 }
 .item-editor-form {
   min-height: 100dvh;
@@ -34,21 +40,22 @@
 .editor-control svg {
   width: 29px;
   height: 29px;
-  stroke-width: 1.2;
+  stroke-width: 1.5;
 }
 .editor-intro {
   padding: min(12vh, 112px) 16px 30px;
   text-align: center;
 }
 .editor-intro h1 {
-  font: inherit;
-  font-size: clamp(20px, 5.2vw, 26px);
-  letter-spacing: -0.6px;
+  font-family: var(--font-display);
+  font-size: clamp(var(--fs-xl), 5.2vw, var(--fs-2xl));
+  font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0 0 41px;
   line-height: 1.3;
 }
 .editor-icon {
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--editor-fg) 30%, transparent);
   background: transparent;
   color: inherit;
   width: 62px;
@@ -58,16 +65,16 @@
   place-items: center;
   padding: 0;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .editor-icon svg {
   width: 30px;
   height: 30px;
-  stroke-width: 1;
+  stroke-width: 1.4;
 }
 .editor-tabs {
   display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.38);
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-fg) 38%, transparent);
   margin-top: 12px;
 }
 .editor-tabs button {
@@ -76,18 +83,18 @@
   background: transparent;
   border: 0;
   border-bottom: 2px solid transparent;
-  color: rgba(36, 103, 48, 0.75);
+  color: color-mix(in srgb, var(--editor-fg) 62%, transparent);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   padding: 10px 5px;
 }
 .editor-tabs button.selected {
-  color: rgba(255, 255, 255, 0.93);
-  border-bottom-color: white;
-  font-weight: 400;
+  color: var(--editor-fg);
+  border-bottom-color: var(--editor-fg);
+  font-weight: 600;
 }
 .editor-fields {
-  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  border-top: 1px solid color-mix(in srgb, var(--editor-fg) 40%, transparent);
 }
 .kind-expense .editor-fields {
   border-top: 0;
@@ -99,7 +106,8 @@
   min-height: 44px;
   padding: 0 14px 0 20px;
   border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.42);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--editor-fg) 40%, transparent);
   margin: 0;
   background: none;
   width: 100%;
@@ -112,38 +120,39 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   width: 100%;
   min-width: 0;
   padding: 11px 0;
   outline-offset: 0;
 }
 .editor-line input::placeholder {
-  color: rgba(255, 255, 255, 0.52);
+  color: color-mix(in srgb, var(--editor-fg) 60%, transparent);
   opacity: 1;
 }
 .editor-period {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 15px;
+  color: color-mix(in srgb, var(--editor-fg) 72%, transparent);
+  font-size: var(--fs-md);
   white-space: nowrap;
 }
 .editor-currency {
   width: 36px;
   height: 36px;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid color-mix(in srgb, var(--editor-fg) 30%, transparent);
   border-radius: 50%;
   background: transparent;
-  color: white;
+  color: var(--editor-fg);
   font: inherit;
-  font-size: 20px;
+  font-size: var(--fs-xl);
+  line-height: 1;
   margin-right: -5px;
 }
 .editor-include {
   justify-content: space-between;
   text-align: left;
   padding-block: 6px;
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 .editor-switch {
   width: 49px;
@@ -151,7 +160,7 @@
   border-radius: 18px;
   padding: 3px;
   display: flex;
-  background: rgba(255, 255, 255, 0.45);
+  background: color-mix(in srgb, var(--editor-fg) 30%, transparent);
   flex-shrink: 0;
 }
 .editor-switch i {
@@ -159,12 +168,12 @@
   height: 24px;
   border-radius: 50%;
   display: block;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 .editor-switch.is-on {
   justify-content: flex-end;
-  background: white;
+  background: var(--editor-fg);
 }
 .editor-delete {
   border: 0;
@@ -174,12 +183,13 @@
   min-height: 44px;
   width: 100%;
   font: inherit;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   margin-top: 20px;
 }
 .editor-error {
-  color: white;
-  font-size: 13px;
+  color: var(--editor-fg);
+  font-size: var(--fs-sm);
+  font-weight: 500;
   padding: 12px 20px 0;
   margin: 0;
 }
@@ -193,7 +203,7 @@
 }
 .item-editor button:focus-visible,
 .item-editor input:focus-visible {
-  outline: 2px solid white;
+  outline: 2px solid var(--editor-fg);
   outline-offset: 3px;
 }
 .icon-picker {
@@ -203,7 +213,7 @@
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(16, 21, 17, 0.2);
   padding-top: calc(40px + env(safe-area-inset-top));
 }
 .icon-picker-panel {
@@ -224,7 +234,7 @@
 .icon-picker-grid button {
   border: 0;
   background: transparent;
-  color: white;
+  color: var(--editor-fg);
   min-height: 40px;
   min-width: 0;
   padding: 0;
@@ -234,19 +244,19 @@
 .icon-picker-grid button > span {
   width: 43px;
   height: 43px;
-  background: rgba(255, 255, 255, 0.17);
+  background: color-mix(in srgb, var(--editor-fg) 14%, transparent);
   border: 1px solid transparent;
   border-radius: 50%;
   display: grid;
   place-items: center;
 }
 .icon-picker-grid button.is-selected > span {
-  border-color: rgba(255, 255, 255, 0.8);
+  border-color: var(--editor-fg);
 }
 .icon-picker-grid svg {
-  width: 30px;
-  height: 30px;
-  stroke-width: 1;
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.4;
 }
 .icon-picker-dots {
   display: flex;
@@ -267,54 +277,57 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: color-mix(in srgb, var(--editor-fg) 30%, transparent);
 }
 .icon-picker-dots .active i {
-  background: white;
+  background: var(--editor-fg);
 }
 .icon-picker-cancel {
   background: transparent;
   border: 0;
-  color: white;
+  color: var(--editor-fg);
   min-height: 47px;
   font: inherit;
-  font-size: 21px;
+  font-size: var(--fs-lg);
+  font-weight: 600;
   margin-top: 5px;
 }
 .editor-currency-overlay {
   position: fixed;
   z-index: 100;
   inset: 0;
-  background: rgba(0, 0, 0, 0.24);
+  background: var(--overlay);
   display: flex;
   align-items: flex-end;
   justify-content: center;
 }
 .editor-currency-dialog {
-  background: #fafafa;
-  color: #686872;
+  background: var(--surface);
+  color: var(--fg-2);
   padding: 20px;
   width: min(100%, 480px);
   border-radius: 14px 14px 0 0;
 }
 .editor-currency-dialog h2 {
-  font: inherit;
-  font-size: 17px;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--fg);
   text-align: center;
   margin: 0 0 15px;
 }
 .editor-currency-dialog button {
-  color: #1683ee;
+  color: var(--accent-ink);
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: transparent;
   border: 0;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--line);
   min-height: 47px;
   width: 100%;
   font: inherit;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   padding: 10px 0;
 }
 .editor-currency-dialog button span {
@@ -335,7 +348,7 @@
   }
   .editor-intro h1 {
     margin-bottom: 27px;
-    font-size: 21px;
+    font-size: var(--fs-xl);
   }
   .editor-icon {
     width: 56px;

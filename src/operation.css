@@ -3,16 +3,16 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--page-bg);
+  background: var(--bg);
   padding-top: env(safe-area-inset-top);
-  color: var(--text);
+  color: var(--fg);
 }
 .operation-header {
   display: flex;
   align-items: center;
   height: 62px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--line);
   gap: 3px;
   padding: 0 6px;
 }
@@ -23,7 +23,7 @@
 .operation-party {
   min-width: 0;
   flex: 1;
-  font-size: 15px;
+  font-size: var(--fs-md);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -37,29 +37,34 @@
   align-items: center;
   position: relative;
   overflow: hidden;
-  padding: 0 12px;
+  padding: 0 54px 0 12px;
   gap: 14px;
-  background: white;
+  background: var(--surface);
 }
 .operation-tags > button:not(.icon-button) {
-  flex: 0 0 auto;
-  max-width: 52%;
+  flex: 0 1 auto;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   background: transparent;
-  color: #c3c3c8;
-  font-size: 13px;
+  color: var(--fg-3);
+  font-size: var(--fs-sm);
   min-height: 40px;
 }
 .operation-tags > button.selected {
-  color: var(--text);
+  color: var(--fg);
+}
+.operation-tags > button:first-child:not(.icon-button) {
+  flex-shrink: 0;
+  max-width: 60%;
 }
 .operation-tags > .icon-button {
   position: absolute;
-  right: 8px;
-  background: white;
-  border: 1px solid var(--rule);
+  right: 10px;
+  top: calc(50% - 15px);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 50%;
   width: 30px;
   min-width: 30px;
@@ -69,8 +74,8 @@
   min-height: 100px;
   height: 100px;
   flex-shrink: 0;
-  background: #484655;
-  color: #f7f6fc;
+  background: var(--panel);
+  color: var(--panel-fg);
   display: flex;
   align-items: center;
   padding: 14px 18px;
@@ -84,13 +89,15 @@
   outline: 0;
   background: transparent;
   color: inherit;
-  font-size: 40px;
-  font-weight: 200;
+  font-family: var(--font-display);
+  font-size: var(--fs-amount);
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 .operation-amount > span {
-  font-size: 29px;
-  color: #aaa8b3;
-  border-left: 1px solid #797783;
+  font-size: var(--fs-2xl);
+  color: var(--panel-fg-2);
+  border-left: 1px solid var(--panel-line);
   margin-left: 16px;
   padding-left: 16px;
   height: 64px;
@@ -107,14 +114,14 @@
 .operation-demo {
   margin: 0;
   padding: 5px 15px;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   flex-shrink: 0;
 }
 .operation-error {
-  color: var(--red);
+  color: var(--bad-ink);
 }
 .operation-demo {
-  color: #878593;
+  color: var(--fg-3);
 }
 .calculator-tools {
   display: grid;
@@ -124,7 +131,7 @@
   flex: 0 0 auto;
 }
 .calculator-tools button {
-  border: 1px solid #bdbbc6;
+  border: 1px solid var(--line-strong);
   background: transparent;
   width: 46px;
   height: 46px;
@@ -132,15 +139,15 @@
   justify-self: center;
   display: grid;
   place-items: center;
-  color: #97949f;
+  color: var(--fg-3);
 }
 .calculator-tools svg {
   width: 20px;
-  stroke-width: 1;
+  stroke-width: 1.4;
 }
 .calculator-tools .chosen {
-  color: var(--mint);
-  border-color: var(--mint);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .calculator-keys {
   display: grid;
@@ -155,42 +162,42 @@
 .calculator-keys button {
   width: clamp(54px, 16.7vw, 80px);
   aspect-ratio: 1;
-  border: 1px solid #bdbbc6;
+  border: 1px solid var(--line-strong);
   border-radius: 50%;
   background: transparent;
-  font-weight: 200;
-  font-size: 32px;
-  color: #777481;
+  font-weight: 400;
+  font-size: var(--fs-2xl);
+  color: var(--fg-2);
   display: grid;
   place-items: center;
 }
 .calculator-keys button.operator-key {
   width: 46px;
-  font-size: 22px;
+  font-size: var(--fs-xl);
 }
 .calculator-keys svg {
   width: 27px;
-  stroke-width: 1;
+  stroke-width: 1.4;
 }
 .operation-date {
   flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
   height: 66px;
   padding-bottom: env(safe-area-inset-bottom);
 }
 .operation-date button {
   background: transparent;
-  font-size: 12px;
-  font-weight: 300;
-  color: #96939e;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--fg-3);
 }
 .operation-date button.selected {
-  color: #666371;
+  color: var(--fg);
 }
 .operation-date svg {
-  stroke-width: 1;
+  stroke-width: 1.4;
   width: 23px;
 }
 .operation-note {
@@ -206,9 +213,9 @@
   border: 0;
   background: transparent;
   padding: 12px;
-  color: var(--text);
+  color: var(--fg);
   outline: 0;
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 .operation-note > div {
   display: flex;
@@ -219,20 +226,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 .custom-tag {
   display: flex;
-  background: white;
+  background: var(--surface);
   padding: 8px;
   gap: 8px;
 }
 .custom-tag input {
   min-width: 0;
   flex: 1;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--line);
   padding: 8px;
-  background: var(--page-bg);
+  background: var(--bg);
 }
 .custom-tag button {
   background: transparent;
@@ -254,7 +261,7 @@
   }
   .calculator-keys button {
     width: 56px;
-    font-size: 29px;
+    font-size: var(--fs-2xl);
   }
   .calculator-keys .operator-key {
     width: 40px;

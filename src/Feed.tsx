@@ -45,15 +45,16 @@ const reportOptions: Array<{ id: ReportKind; label: string }> = [
   { id: "balance", label: "В наличии" },
   { id: "capital", label: "Накопленный капитал" },
 ];
+// Цвета рядов — палитра AI Capper.
 const chartColors = [
-  "#e51b51",
-  "#ffa742",
-  "#f96451",
-  "#f6c947",
-  "#77748f",
-  "#b0cf77",
-  "#358c83",
-  "#4c89a5",
+  "var(--s1)",
+  "var(--s2)",
+  "var(--s3)",
+  "var(--s4)",
+  "var(--s5)",
+  "var(--s6)",
+  "var(--s7)",
+  "var(--s8)",
 ];
 
 function periodBefore(period: string, offset: number): string {
@@ -177,6 +178,8 @@ export default function Feed({
   const periods = Array.from({ length: chartMonths }, (_, index) =>
     periodBefore(period, chartMonths - index - 1),
   );
+  // Больше шести подписей месяцев не помещается в ширину телефона.
+  const monthLabelStep = Math.ceil(periods.length / 6);
   const currentBalance =
     (report === "balance" || report === "capital") && !showBudget
       ? Math.round(
@@ -406,7 +409,7 @@ export default function Feed({
             style={{
               background: breakdownTotal
                 ? `conic-gradient(${donutStops.join(",")})`
-                : "#dedee2",
+                : "var(--surface-3)",
             }}
           >
             <div>
@@ -468,7 +471,7 @@ export default function Feed({
                         (negativeChart ? 18 : chartHeight - 19),
                     ),
                   )}
-                  fill="#ca1b55"
+                  style={{ fill: "var(--account)" }}
                 />
               </>
             ) : (
@@ -476,14 +479,14 @@ export default function Feed({
                 {report !== "expense" && report !== "both" && (
                   <path
                     d={`${linePath("income")} L ${chartWidth} ${chartHeight - 19} L 0 ${chartHeight - 19} Z`}
-                    fill="#c91e55"
-                    opacity=".95"
+                    style={{ fill: "var(--good)" }}
+                    opacity=".9"
                   />
                 )}
                 {report === "both" && (
                   <path
                     d={linePath("income")}
-                    stroke="#08a47b"
+                    style={{ stroke: "var(--good)" }}
                     strokeWidth="3.5"
                     fill="none"
                     strokeLinejoin="round"
@@ -492,7 +495,7 @@ export default function Feed({
                 {report !== "income" && (
                   <path
                     d={linePath("expense")}
-                    stroke={report === "both" ? "#d8313b" : "#c91e55"}
+                    style={{ stroke: "var(--bad)" }}
                     strokeWidth="3.5"
                     fill="none"
                     strokeLinejoin="round"
@@ -518,9 +521,11 @@ export default function Feed({
             </button>
           </div>
           <div className="feed-chart-months">
-            {periods.map((value) => (
-              <span key={value}>{shortPeriod(value)}</span>
-            ))}
+            {periods.map((value, index) =>
+              (periods.length - 1 - index) % monthLabelStep === 0 ? (
+                <span key={value}>{shortPeriod(value)}</span>
+              ) : null,
+            )}
           </div>
         </div>
       )}

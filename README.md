@@ -4,7 +4,10 @@
 Предназначен для согласования в браузере телефона iOS или Android.
 Стек React + TypeScript + Vite взят из
 [AI Capper](https://github.com/rvburov/ai_agent_capper), правила разработки
-адаптированы из его `CLAUDE.md` в `AGENTS.md`.
+адаптированы из его `CLAUDE.md` в `AGENTS.md`. Цвета и шрифты (Golos Text,
+Geologica) — из дизайн-системы AI Capper, токены в начале `src/style.css`.
+Шрифты загружаются с Google Fonts, без интернета макет показывается
+системным шрифтом.
 
 ## Запуск
 

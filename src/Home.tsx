@@ -180,7 +180,7 @@ export default function Home({
             style={
               item.kind === "expense" && amount > 0 && !isOver
                 ? {
-                    background: `linear-gradient(to top, var(--mint) ${fill}%, var(--circle-gray) ${fill}%)`,
+                    background: `linear-gradient(to top, var(--positive) ${fill}%, var(--idle) ${fill}%)`,
                   }
                 : undefined
             }
