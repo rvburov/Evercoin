@@ -1,0 +1,188 @@
+.settings-screen {
+  min-height: 100dvh;
+  background: #f1f0f6;
+  color: #72717d;
+}
+.settings-screen .screen-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #faf9ff;
+}
+.settings-scroll {
+  padding-top: 12px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+.settings-group {
+  background: #fff;
+  border-top: 1px solid #dddce1;
+  border-bottom: 1px solid #dddce1;
+}
+.settings-row {
+  display: flex;
+  width: 100%;
+  min-height: 43px;
+  padding: 0 13px;
+  gap: 14px;
+  color: inherit;
+  background: transparent;
+  align-items: center;
+  text-align: left;
+  border: 0;
+}
+.settings-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 7px;
+  color: white;
+  flex-shrink: 0;
+}
+.settings-row-icon svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 1;
+}
+.settings-row-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+  min-height: 43px;
+  border-bottom: 1px solid #d7d6db;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 300;
+}
+.settings-row:last-child .settings-row-content {
+  border-bottom: 0;
+}
+.settings-row-content > svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.settings-row-value {
+  flex-shrink: 0;
+  color: #72717d;
+  white-space: nowrap;
+}
+.settings-section-title {
+  margin: 0;
+  min-height: 58px;
+  padding: 28px 13px 11px;
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: 300;
+  color: #aaa9b2;
+}
+.settings-toggle {
+  display: inline-flex;
+  width: 48px;
+  height: 28px;
+  border-radius: 18px;
+  background: #e6e6e6;
+  padding: 2px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.settings-toggle i {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #0002;
+  transition: transform 0.15s;
+}
+.settings-toggle.is-on {
+  background: #716e86;
+}
+.settings-toggle.is-on i {
+  transform: translateX(20px);
+}
+.settings-reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  margin: 16px auto 0;
+  padding: 0 12px;
+  color: #92919b;
+  font-size: 12px;
+  background: transparent;
+  border: 0;
+}
+.settings-dialog-backdrop {
+  position: fixed;
+  z-index: 130;
+  inset: 0;
+  background: #0004;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.settings-dialog {
+  position: relative;
+  width: min(100%, 480px);
+  padding: 20px;
+  background: #faf9ff;
+  border-radius: 14px 14px 0 0;
+  color: #696974;
+}
+.settings-dialog h2 {
+  font-size: 17px;
+  margin: 0 30px 20px 0;
+  font-weight: 400;
+}
+.settings-dialog p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+.settings-dialog button {
+  width: 100%;
+  min-height: 45px;
+  border: 0;
+  border-top: 1px solid #dfdee4;
+  background: transparent;
+  color: #1686d8;
+  font: inherit;
+}
+.settings-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+.settings-dialog input {
+  width: 100%;
+  min-height: 42px;
+  padding: 7px;
+  border: 1px solid #dddae1;
+  color: #696974;
+  background: #fff;
+  font: inherit;
+}
+.settings-dialog .settings-dialog-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 35px;
+  height: 35px;
+  min-height: 35px;
+  border: 0;
+}
+@media (max-width: 374px) {
+  .settings-row {
+    padding-inline: 12px;
+    gap: 12px;
+  }
+  .settings-row-content {
+    font-size: 14px;
+  }
+}
