@@ -3,15 +3,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  Menu,
-  Mic,
-  Pencil,
-  Plus,
-  X,
-} from "lucide-react";
+import { Pencil, Plus, X } from "lucide-react";
 import {
   accountBalance,
   compactMoney,
@@ -24,6 +16,7 @@ import {
   type FinanceState,
   type ItemKind,
   type OperationDraft,
+  type ReportKind,
 } from "./data";
 import { Icon } from "./ui";
 import { useFinanceDrag } from "./useFinanceDrag";
@@ -32,36 +25,30 @@ interface HomeProps {
   state: FinanceState;
   period: string;
   editing: boolean;
-  onMenu: () => void;
-  onFeed: (filter?: string, report?: "expense" | "income" | "balance") => void;
+  onFeed: (filter?: string) => void;
+  onStats: (report: ReportKind) => void;
   onEditor: (item: FinanceItem) => void;
   onAdd: (kind: ItemKind) => void;
   onRemove: (item: FinanceItem) => void;
   onDone: () => void;
   onDraft: (draft: Partial<OperationDraft>) => void;
-  onToggleIncome: () => void;
-  onAssistant: () => void;
   notify: (message: string) => void;
 }
 export default function Home({
   state,
   period,
   editing,
-  onMenu,
   onFeed,
+  onStats,
   onEditor,
   onAdd,
   onRemove,
   onDone,
   onDraft,
-  onToggleIncome,
-  onAssistant,
   notify,
 }: HomeProps) {
-  const [expensePage, setExpensePage] = useState(0);
   const [incomePage, setIncomePage] = useState(0);
   const [accountPage, setAccountPage] = useState(0);
-  const expenseRef = useRef<HTMLDivElement>(null);
   const incomeRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
   const startTouch = useRef<{ x: number; y: number } | null>(null);
@@ -78,45 +65,26 @@ export default function Home({
     (item) => item.kind === "expense" && !item.archived,
   );
   const incomePages = Math.max(1, Math.ceil((incomes.length + 1) / 4));
-  const expensePages = Math.max(1, Math.ceil((expenses.length + 1) / 20));
   const accountPages = Math.max(1, Math.ceil((accounts.length + 1) / 4));
-  function selectPage(kind: "expense" | "account" | "income", index: number) {
-    const ref =
-      kind === "expense"
-        ? expenseRef
-        : kind === "income"
-          ? incomeRef
-          : accountRef;
+  function selectPage(kind: "account" | "income", index: number) {
+    const ref = kind === "income" ? incomeRef : accountRef;
     ref.current?.scrollTo({
       left: index * ref.current.clientWidth,
       behavior: "smooth",
     });
-    if (kind === "expense") setExpensePage(index);
-    else if (kind === "income") setIncomePage(index);
+    if (kind === "income") setIncomePage(index);
     else setAccountPage(index);
   }
-  function swipeEnd(
-    event: ReactPointerEvent,
-    kind: "expense" | "account" | "income",
-  ) {
+  // Доходы и счета листаются влево и вправо, расходы прокручиваются вниз.
+  function swipeEnd(event: ReactPointerEvent, kind: "account" | "income") {
     const start = startTouch.current;
     startTouch.current = null;
     if (!start || drag) return;
     const distance = start.x - event.clientX;
     if (Math.abs(distance) < 45 || Math.abs(event.clientY - start.y) > 60)
       return;
-    const current =
-      kind === "expense"
-        ? expensePage
-        : kind === "income"
-          ? incomePage
-          : accountPage;
-    const count =
-      kind === "expense"
-        ? expensePages
-        : kind === "income"
-          ? incomePages
-          : accountPages;
+    const current = kind === "income" ? incomePage : accountPage;
+    const count = kind === "income" ? incomePages : accountPages;
     selectPage(
       kind,
       Math.max(0, Math.min(count - 1, current + (distance > 0 ? 1 : -1))),
@@ -196,7 +164,7 @@ export default function Home({
             <span className="tile-budget">
               {item.budget > 0
                 ? money(item.budget).replace(" ₽", "")
-                : "\u00a0"}
+                : " "}
             </span>
           )}
         </button>
@@ -243,33 +211,23 @@ export default function Home({
     >
       {!editing && (
         <header className="overview-header">
-          <button
-            className="icon-button"
-            aria-label="Открыть меню"
-            onClick={onMenu}
-          >
-            <Menu />
-          </button>
-          <button onClick={() => onFeed(undefined, "balance")}>
+          <button onClick={() => onStats("balance")}>
             <span>Баланс</span>
             <strong data-testid="total-balance">
               {compactMoney(totalBalance(state))}
             </strong>
           </button>
-          <button onClick={() => onFeed(undefined, "expense")}>
+          <button onClick={() => onStats("expense")}>
             <span>Расходы</span>
-            <strong>{money(summary.expense)}</strong>
+            <strong>{compactMoney(summary.expense)}</strong>
           </button>
-          <button onClick={() => onFeed(undefined, "expense")}>
-            <span>В планах</span>
-            <strong>{money(summary.planned)}</strong>
+          <button onClick={() => onStats("income")}>
+            <span>Доходы</span>
+            <strong>{compactMoney(summary.income)}</strong>
           </button>
-          <button
-            className="icon-button"
-            aria-label="Свернуть доходы"
-            onClick={onToggleIncome}
-          >
-            {state.preferences.incomeVisible ? <ChevronUp /> : <ChevronDown />}
+          <button onClick={() => onStats("expense")}>
+            <span>План</span>
+            <strong>{compactMoney(summary.planned)}</strong>
           </button>
         </header>
       )}
@@ -344,12 +302,7 @@ export default function Home({
           {Array.from({ length: accountPages }, (_, page) => (
             <div className="account-page item-grid" key={page}>
               {accounts.slice(page * 4, page * 4 + 4).map(tile)}
-              {page === accountPages - 1 &&
-                accounts.length % 4 !== 0 &&
-                addTile("account")}
-              {page === accountPages - 1 &&
-                accounts.length % 4 === 0 &&
-                addTile("account")}
+              {page === accountPages - 1 && addTile("account")}
             </div>
           ))}
         </div>
@@ -366,61 +319,24 @@ export default function Home({
           ))}
         </div>
       </section>
-      <section
-        className="expense-band"
-        aria-label="Расходы"
-        onPointerDown={(event) => {
-          startTouch.current = { x: event.clientX, y: event.clientY };
-        }}
-        onPointerUp={(event) => swipeEnd(event, "expense")}
-      >
+      <section className="expense-band" aria-label="Расходы">
         <div
-          className={`expense-pages ${drag?.kind === "account" ? "targets-active" : ""}`}
-          ref={expenseRef}
-          onScroll={(event) =>
-            setExpensePage(
-              Math.round(
-                event.currentTarget.scrollLeft /
-                  event.currentTarget.clientWidth,
-              ),
-            )
-          }
+          className={`expense-scroll ${drag?.kind === "account" ? "targets-active" : ""}`}
+          data-autoscroll
         >
-          {Array.from({ length: expensePages }, (_, page) => (
-            <div className="expense-page item-grid" key={page}>
-              {expenses.slice(page * 20, page * 20 + 20).map(tile)}
-              {page === expensePages - 1 && addTile("expense")}
-            </div>
-          ))}
+          <div className="expense-grid item-grid">
+            {expenses.map(tile)}
+            {addTile("expense")}
+          </div>
         </div>
       </section>
-      <footer className="home-footer">
-        <div className="page-dots">
-          {Array.from({ length: expensePages }, (_, page) => (
-            <button
-              key={page}
-              aria-label={`Расходы, страница ${page + 1}`}
-              aria-current={expensePage === page}
-              onClick={() => selectPage("expense", page)}
-            >
-              <i />
-            </button>
-          ))}
-        </div>
-        {editing ? (
+      {editing && (
+        <footer className="home-footer">
           <button className="home-edit-done" onClick={onDone}>
             Готово
           </button>
-        ) : (
-          <button
-            className="assistant-fab"
-            aria-label="Финансовый помощник"
-            onClick={onAssistant}
-          >
-            <Mic size={20} />
-          </button>
-        )}
-      </footer>
+        </footer>
+      )}
       {drag && (
         <>
           <div className="drag-instruction">

@@ -6,11 +6,14 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   Clock3,
+  Cloud,
   Coins,
   KeyRound,
   MessageCircle,
   Palette,
+  Pencil,
   PiggyBank,
   Radio,
   RefreshCw,
@@ -18,6 +21,7 @@ import {
   ScrollText,
   Timer,
   Type,
+  UserRound,
   Volume2,
   X,
 } from "lucide-react";
@@ -26,8 +30,12 @@ import "./settings.css";
 
 interface SettingsProps {
   preferences: Preferences;
+  profileName: string;
   onChange: (preferences: Preferences) => void;
   onBack: () => void;
+  onProfile: () => void;
+  onEditHome: () => void;
+  onHelp: () => void;
   onExport: () => void;
   onReset: () => void;
   notify: (message: string) => void;
@@ -79,8 +87,12 @@ function SettingsRow({
 
 export default function Settings({
   preferences,
+  profileName,
   onChange,
   onBack,
+  onProfile,
+  onEditHome,
+  onHelp,
   onExport,
   onReset,
   notify,
@@ -105,6 +117,27 @@ export default function Settings({
         <span />
       </header>
       <div className="settings-scroll">
+        {/* Пункты бывшего бокового меню: профиль и правка главного экрана. */}
+        <div className="settings-group">
+          <SettingsRow
+            icon={<UserRound />}
+            color="var(--s1)"
+            label="Профиль"
+            onClick={onProfile}
+          >
+            <span className="settings-row-value">
+              {profileName || "Демо"}
+            </span>
+          </SettingsRow>
+          <SettingsRow
+            icon={<Pencil />}
+            color="var(--accent)"
+            label="Изменить главный экран"
+            onClick={onEditHome}
+          >
+            <ChevronRight />
+          </SettingsRow>
+        </div>
         <div className="settings-group">
           <SettingsRow
             icon={<Coins />}
@@ -268,6 +301,24 @@ export default function Settings({
             }
           >
             <ChevronRight />
+          </SettingsRow>
+        </div>
+        <div className="settings-group">
+          <SettingsRow
+            icon={<CircleHelp />}
+            color="var(--s2)"
+            label="Помощь"
+            onClick={onHelp}
+          >
+            <ChevronRight />
+          </SettingsRow>
+          <SettingsRow
+            icon={<Cloud />}
+            color="var(--s3)"
+            label="Синхронизация"
+            onClick={() => notify("Демоданные сохранены в этом браузере")}
+          >
+            <span className="settings-row-value">Сегодня, 19:56</span>
           </SettingsRow>
         </div>
         <button className="settings-reset" onClick={onReset}>

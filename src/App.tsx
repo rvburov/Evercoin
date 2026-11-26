@@ -1,15 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Mail,
-  Pencil,
-  RefreshCw,
-  ScrollText,
-  Settings2,
-  UserRound,
-  Plus,
-} from "lucide-react";
+import BottomNav, { type NavTab } from "./BottomNav";
 import Home from "./Home";
 import Feed from "./Feed";
 import Settings from "./Settings";
@@ -34,15 +24,20 @@ import {
 } from "./data";
 import { ActionSheet, ScreenHeader } from "./ui";
 
-type Screen = "home" | "feed" | "settings" | "profile" | "assistant" | "help";
+type Screen =
+  | "home"
+  | "feed"
+  | "stats"
+  | "settings"
+  | "profile"
+  | "assistant"
+  | "help";
 export default function App() {
   const [state, setState] = useState<FinanceState>(loadState);
   const [screen, setScreen] = useState<Screen>("home");
   const [period, setPeriod] = useState("2026-11");
   const [filterId, setFilterId] = useState<string | null>(null);
   const [report, setReport] = useState<ReportKind | undefined>();
-  const [menu, setMenu] = useState(false);
-  const [profileSwitcher, setProfileSwitcher] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editor, setEditor] = useState<FinanceItem | null>(null);
   const [operation, setOperation] = useState<OperationDraft | null>(null);
@@ -70,7 +65,6 @@ export default function App() {
       else if (resetConfirm) setResetConfirm(false);
       else if (operation) setOperation(null);
       else if (editor) setEditor(null);
-      else if (menu) setMenu(false);
       else {
         setScreen("home");
         setEditing(false);
@@ -78,7 +72,7 @@ export default function App() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [calendar, pendingDelete, resetConfirm, operation, editor, menu]);
+  }, [calendar, pendingDelete, resetConfirm, operation, editor]);
 
   function updateState(next: FinanceState) {
     setState(next);
@@ -87,13 +81,23 @@ export default function App() {
   }
   function navigate(next: Screen) {
     setScreen(next);
-    setMenu(false);
     window.scrollTo({ top: 0 });
   }
-  function openFeed(id?: string, kind?: "expense" | "income" | "balance") {
+  // Лента — операции по дням, Статистика — графики и отчеты.
+  function openFeed(id?: string) {
     setFilterId(id || null);
-    setReport(kind);
+    setReport(undefined);
     navigate("feed");
+  }
+  function openStats(kind?: ReportKind) {
+    setFilterId(null);
+    setReport(kind);
+    navigate("stats");
+  }
+  function selectTab(tab: NavTab) {
+    if (tab === "feed") openFeed();
+    else if (tab === "stats") openStats();
+    else navigate(tab);
   }
   function openOperation(
     values: Partial<OperationDraft> = {},
@@ -118,7 +122,6 @@ export default function App() {
     setOperation(initial);
     setEditingEntryId(entryId);
     saveLock.current = false;
-    setMenu(false);
   }
   function saveOperation(draft: OperationDraft) {
     if (saveLock.current) return;
@@ -227,29 +230,20 @@ export default function App() {
           state={state}
           period={period}
           editing={editing}
-          onMenu={() => setMenu(true)}
           onFeed={openFeed}
+          onStats={openStats}
           onEditor={setEditor}
           onAdd={addItem}
           onRemove={deleteItem}
           onDone={() => setEditing(false)}
           onDraft={openOperation}
-          onToggleIncome={() =>
-            updateState({
-              ...state,
-              preferences: {
-                ...state.preferences,
-                incomeVisible: !state.preferences.incomeVisible,
-              },
-            })
-          }
-          onAssistant={() => navigate("assistant")}
           notify={notify}
         />
       )}
-      {screen === "feed" && (
+      {(screen === "feed" || screen === "stats") && (
         <Feed
-          key={`${filterId || "all"}-${report || "default"}`}
+          key={`${screen}-${filterId || "all"}-${report || "default"}`}
+          view={screen === "stats" ? "stats" : "feed"}
           state={state}
           period={period}
           filterId={filterId}
@@ -276,8 +270,15 @@ export default function App() {
       {screen === "settings" && (
         <Settings
           preferences={state.preferences}
+          profileName={state.profileName}
           onChange={(preferences) => updateState({ ...state, preferences })}
           onBack={() => navigate("home")}
+          onProfile={() => navigate("profile")}
+          onEditHome={() => {
+            setEditing(true);
+            navigate("home");
+          }}
+          onHelp={() => navigate("help")}
           onExport={exportEntries}
           onReset={() => setResetConfirm(true)}
           notify={notify}
@@ -288,10 +289,10 @@ export default function App() {
           profileName={state.profileName}
           onSave={(profileName) => {
             updateState({ ...state, profileName });
-            navigate("home");
+            navigate("settings");
             notify("Демонстрационный профиль сохранен");
           }}
-          onBack={() => navigate("home")}
+          onBack={() => navigate("settings")}
         />
       )}
       {screen === "assistant" && (
@@ -305,7 +306,7 @@ export default function App() {
       )}
       {screen === "help" && (
         <div className="help-screen">
-          <ScreenHeader title="Помощь" onBack={() => navigate("home")} />
+          <ScreenHeader title="Помощь" onBack={() => navigate("settings")} />
           <section>
             <h2>Как записать операцию</h2>
             <p>
@@ -318,14 +319,16 @@ export default function App() {
             </button>
             <h2>Как изменить счета и категории</h2>
             <p>
-              В меню нажмите карандаш внизу. Выберите значок карандаша у
-              категории или счета. Страницы категорий и счетов переключаются
-              смахиванием и точками.
+              В настройках выберите «Изменить главный экран» и нажмите
+              карандаш у категории или счета. Доходы и счета листаются
+              смахиванием влево и вправо, категории расходов прокручиваются
+              вниз.
             </p>
             <h2>Финансовый помощник</h2>
             <p>
-              Значок микрофона открывает помощника. В макете доступны демопример
-              голосовой записи и ответы по вашим операциям.
+              Круглая кнопка «Помощник» в центре нижнего меню открывает
+              помощника. В макете доступны демопример голосовой записи и ответы
+              по вашим операциям.
             </p>
             <button
               className="full-button"
@@ -338,99 +341,27 @@ export default function App() {
       )}
     </>
   );
+  // Нижнее меню видно на вкладках, но не в правке, операции и редакторе.
+  const navTab: NavTab | null =
+    operation || editor || editing
+      ? null
+      : screen === "home" ||
+          screen === "feed" ||
+          screen === "stats" ||
+          screen === "settings"
+        ? screen
+        : null;
   return (
     <div
-      className={`app-shell ${state.preferences.largeFonts ? "large-fonts" : ""} ${menu ? "menu-open" : ""}`}
+      className={`app-shell ${state.preferences.largeFonts ? "large-fonts" : ""} ${navTab ? "has-nav" : ""}`}
     >
       <div className="app-content">{activeScreen}</div>
-      {menu && (
-        <div className="menu-overlay" onClick={() => setMenu(false)}>
-          <aside
-            className="side-menu"
-            aria-label="Меню приложения"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="menu-profile">
-              <UserRound />
-              <button onClick={() => setProfileSwitcher(!profileSwitcher)}>
-                {state.profileName || "Профиль"}
-              </button>
-              <button
-                className="icon-button"
-                aria-label="Изменить профиль"
-                onClick={() => navigate("profile")}
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                className="icon-button"
-                aria-label="Показать профили"
-                onClick={() => setProfileSwitcher(!profileSwitcher)}
-              >
-                <ChevronDown size={16} />
-              </button>
-            </div>
-            {profileSwitcher && (
-              <div className="profile-switcher">
-                <button
-                  className="add-profile full-button"
-                  onClick={() => navigate("profile")}
-                >
-                  ДОБАВИТЬ ПРОФИЛЬ
-                </button>
-              </div>
-            )}
-            <div className="menu-links">
-              <button
-                className="menu-row"
-                onClick={() => {
-                  setFilterId(null);
-                  setReport(undefined);
-                  navigate("feed");
-                }}
-              >
-                <ScrollText />
-                <span>ЛЕНТА</span>
-                <ChevronRight />
-              </button>
-              <button className="menu-row" onClick={() => navigate("settings")}>
-                <Settings2 />
-                <span>НАСТРОЙКИ</span>
-                <ChevronRight />
-              </button>
-              <button className="menu-row" onClick={() => navigate("help")}>
-                <Mail />
-                <span>ПОМОЩЬ</span>
-                <ChevronRight />
-              </button>
-            </div>
-            <div className="menu-bottom">
-              <button
-                onClick={() => notify("Демоданные сохранены в этом браузере")}
-              >
-                <RefreshCw />
-                <span>Сегодня, 19:56</span>
-              </button>
-              <button
-                className="icon-button"
-                aria-label="Добавить операцию"
-                onClick={() => openOperation()}
-              >
-                <Plus />
-              </button>
-              <button
-                className="icon-button"
-                aria-label="Редактировать главный экран"
-                onClick={() => {
-                  setEditing(true);
-                  setMenu(false);
-                }}
-              >
-                <Pencil />
-              </button>
-            </div>
-          </aside>
-        </div>
+      {navTab && (
+        <BottomNav
+          active={navTab}
+          onSelect={selectTab}
+          onAssistant={() => navigate("assistant")}
+        />
       )}
       {calendar && (
         <Calendar

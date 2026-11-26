@@ -74,6 +74,10 @@
   --panel-fg: var(--surface);
   --panel-fg-2: #b8c1ba;
   --panel-line: rgba(252, 252, 251, 0.14);
+  /* Нижнее меню: высота островка с выступом и отступ от края экрана */
+  --nav-height: 104px;
+  --nav-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  --nav-space: calc(var(--nav-height) + var(--nav-bottom));
   color-scheme: light;
 }
 * {
@@ -167,12 +171,6 @@ svg {
     box-shadow: 0 0 0 1px var(--line);
   }
 }
-.app-content {
-  transition: transform 0.2s ease;
-}
-.menu-open .app-content {
-  transform: translateX(67%);
-}
 .icon-button {
   display: inline-flex;
   align-items: center;
@@ -228,104 +226,76 @@ svg {
 }
 
 /* ---------- Главный экран ----------
-   Все круги одного размера --c. Он считается от высоты экрана так, чтобы
-   сводка, доходы, счета и пять рядов расходов помещались без наложений.
-   Строки под кругом фиксированной высоты, лишнее место делится между рядами. */
+   Все круги одного размера --c, строки под кругом фиксированной высоты,
+   длинное название обрезается многоточием. Доходы и счета листаются вбок,
+   расходы прокручиваются вниз под нижним меню. */
 .home-screen {
-  --head-h: 48px;
-  --foot-h: 40px;
+  --head-h: 46px;
   --name-lh: 13px;
   --value-lh: 14px;
   --budget-lh: 12px;
   --text-h: calc(
     var(--name-lh) + var(--value-lh) + var(--budget-lh) + 6px
   );
-  --c: clamp(
-    26px,
-    calc(
-      (
-          100dvh - env(safe-area-inset-bottom, 0px) - var(--head-h) -
-            var(--foot-h) - 7 * var(--text-h) - 60px
-        ) / 7
-    ),
-    44px
-  );
+  --c: 42px;
   height: 100dvh;
-  min-height: calc(
-    var(--head-h) + var(--foot-h) + 7 * var(--text-h) + 60px + 7 * 26px +
-      env(safe-area-inset-bottom, 0px)
-  );
+  min-height: 560px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--bg);
 }
-.home-screen.home-editing {
-  --head-h: 0px;
-  --foot-h: 70px;
+@media (max-height: 700px) {
+  .home-screen {
+    --c: 38px;
+  }
 }
 .large-fonts .home-screen {
   --name-lh: 15px;
   --value-lh: 16px;
   --budget-lh: 14px;
 }
+/* Сводка: подписи и суммы в том же виде, что у плиток ниже. */
 .overview-header {
   height: var(--head-h);
   flex: none;
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
-.overview-header > .icon-button {
-  position: relative;
-  width: 48px;
-  color: var(--fg-3);
-}
-.overview-header > .icon-button::after {
-  content: "";
-  position: absolute;
-  top: 12px;
-  bottom: 12px;
-  width: 1px;
-  background: var(--line);
-}
-.overview-header > .icon-button:first-child::after {
-  right: 0;
-}
-.overview-header > .icon-button:last-child::after {
-  left: 0;
-}
-.overview-header > button:not(.icon-button) {
-  flex: 1 1 0;
+.overview-header > button {
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  padding: 0 4px;
+  gap: 2px;
+  padding: 0 3px;
 }
-.overview-header > button:not(.icon-button) > span {
-  font-size: var(--fs-2xs);
-  line-height: 14px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--fg-3);
-}
+.overview-header > button > span,
 .overview-header strong {
   max-width: 100%;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-display);
-  font-size: var(--fs-md);
-  line-height: 19px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+}
+.overview-header > button > span {
+  font-size: var(--fs-2xs);
+  line-height: var(--name-lh);
+  color: var(--fg-2);
+}
+.overview-header strong {
+  font-size: var(--fs-xs);
+  line-height: var(--value-lh);
+  font-weight: 500;
   color: var(--fg);
+}
+.large-fonts .overview-header > button > span {
+  font-size: var(--fs-xs);
+}
+.large-fonts .overview-header strong {
+  font-size: var(--fs-sm);
 }
 .income-band,
 .account-band {
@@ -347,8 +317,7 @@ svg {
   height: 100%;
 }
 .income-pages,
-.account-pages,
-.expense-pages {
+.account-pages {
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
@@ -357,8 +326,7 @@ svg {
   overscroll-behavior-x: contain;
 }
 .income-pages::-webkit-scrollbar,
-.account-pages::-webkit-scrollbar,
-.expense-pages::-webkit-scrollbar {
+.account-pages::-webkit-scrollbar {
   display: none;
 }
 .income-pages,
@@ -374,19 +342,24 @@ svg {
 .expense-band {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
-.expense-pages {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+.expense-scroll {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  padding: 12px 0 calc(var(--nav-space) + 12px);
 }
-.expense-page {
-  flex: 0 0 100%;
-  grid-template-rows: repeat(5, calc(var(--c) + var(--text-h)));
-  align-content: space-evenly;
-  scroll-snap-align: start;
+.expense-scroll::-webkit-scrollbar {
+  display: none;
+}
+.home-editing .expense-scroll {
+  padding-bottom: 16px;
+}
+.expense-grid {
+  grid-auto-rows: calc(var(--c) + var(--text-h));
+  row-gap: 14px;
 }
 .finance-tile {
   position: relative;
@@ -520,8 +493,7 @@ svg {
   left: calc(50% + var(--c) / 2 - 11px);
 }
 
-/* Точки страниц: одна форма для доходов, счетов и расходов. */
-.page-dots,
+/* Точки страниц доходов и счетов. */
 .income-page-control,
 .account-page-control {
   display: flex;
@@ -536,7 +508,6 @@ svg {
   bottom: 0;
   height: 10px;
 }
-.page-dots button,
 .income-page-control button,
 .account-page-control button {
   width: 18px;
@@ -544,7 +515,6 @@ svg {
   display: grid;
   place-items: center;
 }
-.page-dots i,
 .income-page-control i,
 .account-page-control i {
   width: 6px;
@@ -552,32 +522,24 @@ svg {
   border-radius: 50%;
   background: var(--line-strong);
 }
-.page-dots [aria-current="true"] i,
 .income-page-control [aria-current="true"] i,
 .account-page-control [aria-current="true"] i {
   background: var(--fg-3);
 }
-.page-dots button:focus-visible,
 .income-page-control button:focus-visible,
 .account-page-control button:focus-visible {
   outline: 0;
 }
-.page-dots button:focus-visible i,
 .income-page-control button:focus-visible i,
 .account-page-control button:focus-visible i {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .home-footer {
-  position: relative;
   flex: none;
-  height: var(--foot-h);
-}
-.home-footer .page-dots {
-  height: 100%;
-}
-.home-editing .home-footer .page-dots {
-  height: 22px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .home-edit-done {
   width: 100%;
@@ -589,28 +551,6 @@ svg {
   font-size: var(--fs-lg);
   font-weight: 600;
   color: var(--accent);
-}
-.assistant-fab {
-  position: absolute;
-  right: 6px;
-  top: 0;
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  color: var(--panel-fg);
-}
-.assistant-fab::before {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: 50%;
-  background: var(--panel);
-}
-.assistant-fab svg {
-  position: relative;
-  width: 17px;
-  height: 17px;
 }
 
 /* ---------- Перетаскивание и уведомления ---------- */
@@ -753,137 +693,124 @@ svg {
   color: var(--bad-ink);
 }
 
-/* ---------- Боковое меню ---------- */
-.menu-overlay {
+/* ---------- Нижнее меню ----------
+   Островок как в клиенте Private Gateway: полоса с выступом под круглую
+   кнопку помощника. Форма — SVG из BottomNav.tsx, цвета — AI Capper. */
+.bottom-nav {
   position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgba(16, 21, 17, 0.2);
+  z-index: 40;
+  left: 50%;
+  bottom: var(--nav-bottom);
+  width: min(100%, 480px);
+  height: var(--nav-height);
+  transform: translateX(-50%);
+  pointer-events: none;
 }
-.side-menu {
-  position: fixed;
-  z-index: 70;
-  top: 0;
+/* Под полосой и у ее верхнего края — фон экрана: прокручиваемый список
+   не просвечивает под меню и плавно уходит под него. */
+.bottom-nav::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  bottom: calc(-1 * var(--nav-bottom));
+  background: linear-gradient(to bottom, transparent, var(--bg) 26px);
+}
+.bottom-nav-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 6px 18px rgba(16, 21, 17, 0.14));
+}
+.bottom-nav-shape path {
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.bottom-nav-items {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 44px;
   bottom: 0;
-  left: max(0px, calc((100vw - 480px) / 2));
-  width: min(67vw, 322px);
-  background: var(--panel);
-  color: var(--panel-fg);
+  display: grid;
+  grid-template-columns: 1fr 1fr 72px 1fr 1fr;
+  pointer-events: auto;
+}
+.bottom-nav-item {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  padding-top: calc(110px + env(safe-area-inset-top, 0px));
-  box-shadow: 5px 0 20px rgba(16, 21, 17, 0.08);
-}
-.menu-profile {
-  min-height: 62px;
-  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 10px 10px 17px;
-  border-bottom: 1px solid var(--panel-line);
-  text-align: left;
-}
-.menu-profile > svg {
-  color: var(--panel-fg-2);
-  width: 27px;
-  height: 27px;
-}
-.menu-profile > button:first-of-type {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: left;
-  font-size: var(--fs-sm);
+  justify-content: flex-end;
+  gap: 3px;
+  padding-bottom: 10px;
+  color: var(--fg-3);
+  font-size: 0.65625rem;
+  line-height: 13px;
   font-weight: 500;
 }
-.menu-profile .icon-button {
-  min-width: 34px;
-  color: var(--panel-fg-2);
-}
-.menu-profile .icon-button svg {
-  width: 20px;
-  height: 20px;
-}
-.profile-switcher {
-  padding-top: 28px;
-}
-.add-profile {
-  width: 100%;
-  min-height: 48px;
-  background: rgba(252, 252, 251, 0.08);
-  color: var(--panel-fg);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-align: center;
-}
-.menu-links {
-  margin-top: 52px;
-}
-.profile-switcher + .menu-links {
-  margin-top: 23px;
-}
-.menu-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 50px;
-  padding: 9px 18px;
-  border-bottom: 1px solid var(--panel-line);
-  text-align: left;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-}
-.menu-row > svg:first-child {
-  width: 26px;
-  height: 26px;
-  color: var(--panel-fg-2);
-}
-.menu-row > svg:last-child {
-  width: 17px;
-  height: 17px;
-  margin-left: auto;
-  color: var(--panel-fg-2);
-}
-.menu-row > span {
-  flex: 1;
-}
-.menu-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  padding: 11px 14px calc(15px + env(safe-area-inset-bottom, 0px));
-  gap: 8px;
-  font-size: var(--fs-xs);
-  color: var(--panel-fg-2);
-}
-.menu-bottom > button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-}
-.menu-bottom svg {
+.bottom-nav-item svg {
   width: 22px;
   height: 22px;
+  stroke-width: 1.6;
 }
-.menu-bottom > .icon-button {
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
-  border: 1px solid var(--panel-fg-2);
+.bottom-nav-item > span {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bottom-nav-item[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+.bottom-nav-center-label {
+  align-self: end;
+  padding-bottom: 10px;
+  text-align: center;
+  font-size: 0.65625rem;
+  line-height: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.bottom-nav-assistant {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin-left: -32px;
+  display: grid;
+  place-items: center;
   border-radius: 50%;
-  color: var(--panel-fg);
+  border: 3px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 4px 12px rgba(20, 104, 74, 0.25);
+  pointer-events: auto;
 }
-.menu-bottom > .icon-button svg {
-  width: 20px;
-  height: 20px;
+.bottom-nav-assistant:hover {
+  background: var(--accent-soft);
+}
+.bottom-nav-assistant:active {
+  transform: scale(0.96);
+}
+.bottom-nav-assistant svg {
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.9;
+}
+.has-nav .feed-screen,
+.has-nav .settings-scroll {
+  padding-bottom: calc(var(--nav-space) + 16px);
+}
+.has-nav .toast {
+  bottom: calc(var(--nav-space) + 8px);
 }
 
 /* ---------- Помощь ---------- */

@@ -27,6 +27,8 @@ import {
 import "./feed.css";
 
 interface FeedProps {
+  // feed — операции по дням, stats — графики и отчеты.
+  view: "feed" | "stats";
   state: FinanceState;
   period: string;
   filterId: string | null;
@@ -74,6 +76,7 @@ function shortPeriod(period: string): string {
 }
 
 export default function Feed({
+  view,
   state,
   period,
   filterId,
@@ -375,359 +378,367 @@ export default function Feed({
             })}
         </div>
       )}
-      {selectedItem && (
+      {selectedItem && view === "feed" && (
         <div className="feed-edit-row">
           <button onClick={() => onEdit(selectedItem.id)}>Изменить</button>
         </div>
       )}
-      <div className="feed-report-heading">
-        <button onClick={() => setReportOpen(true)}>
-          {reportOptions.find((option) => option.id === report)!.label}
-          <ChevronDown size={15} />
-        </button>
-        <button
-          className="icon-button"
-          aria-label={
-            chartMode === "line" ? "Круговая диаграмма" : "Линейный график"
-          }
-          onClick={toggleChart}
-        >
-          {chartMode === "line" ? (
-            <ChartPie size={27} />
+      {view === "stats" && (
+        <>
+          <div className="feed-report-heading">
+            <button onClick={() => setReportOpen(true)}>
+              {reportOptions.find((option) => option.id === report)!.label}
+              <ChevronDown size={15} />
+            </button>
+            <button
+              className="icon-button"
+              aria-label={
+                chartMode === "line" ? "Круговая диаграмма" : "Линейный график"
+              }
+              onClick={toggleChart}
+            >
+              {chartMode === "line" ? (
+                <ChartPie size={27} />
+              ) : (
+                <ChartNoAxesCombined size={27} />
+              )}
+            </button>
+          </div>
+          {chartMode === "donut" &&
+          (report === "income" || report === "expense") ? (
+            <div className="feed-donut-region">
+              <div
+                className="feed-donut"
+                role="img"
+                aria-label={`${report === "income" ? "Доходы" : "Расходы"} ${money(breakdownTotal)}. Подробности ниже.`}
+                style={{
+                  background: breakdownTotal
+                    ? `conic-gradient(${donutStops.join(",")})`
+                    : "var(--surface-3)",
+                }}
+              >
+                <div>
+                  <span>{shortPeriod(period)}</span>
+                  <strong>{money(breakdownTotal)}</strong>
+                </div>
+              </div>
+              <div className="feed-donut-labels">
+                {breakdown.slice(0, 4).map((row, index) => (
+                  <span key={row.item.id} style={{ color: chartColors[index] }}>
+                    {Math.round((row.amount / breakdownTotal) * 100)}%
+                  </span>
+                ))}
+              </div>
+            </div>
           ) : (
-            <ChartNoAxesCombined size={27} />
-          )}
-        </button>
-      </div>
-      {chartMode === "donut" &&
-      (report === "income" || report === "expense") ? (
-        <div className="feed-donut-region">
-          <div
-            className="feed-donut"
-            role="img"
-            aria-label={`${report === "income" ? "Доходы" : "Расходы"} ${money(breakdownTotal)}. Подробности ниже.`}
-            style={{
-              background: breakdownTotal
-                ? `conic-gradient(${donutStops.join(",")})`
-                : "var(--surface-3)",
-            }}
-          >
-            <div>
-              <span>{shortPeriod(period)}</span>
-              <strong>{money(breakdownTotal)}</strong>
-            </div>
-          </div>
-          <div className="feed-donut-labels">
-            {breakdown.slice(0, 4).map((row, index) => (
-              <span key={row.item.id} style={{ color: chartColors[index] }}>
-                {Math.round((row.amount / breakdownTotal) * 100)}%
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="feed-line-region">
-          <div className="feed-chart-ticks">
-            {[4, 3, 2, 1, 0].map((tick, index) => (
-              <span key={tick}>
-                {money(((negativeChart ? -index : tick) * maxValue) / 4)}
-              </span>
-            ))}
-          </div>
-          <svg
-            className="feed-line-chart"
-            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-            preserveAspectRatio="none"
-            role="img"
-            aria-label={`График за ${chartMonths} месяца. ${report === "both" ? `Расходы ${money(totalExpense)}, доходы ${money(totalIncome)}` : money(totalValue)}`}
-          >
-            {[0, 1, 2, 3, 4].map((value) => (
-              <line
-                key={value}
-                x1="0"
-                x2={chartWidth}
-                y1={18 + (value * (chartHeight - 37)) / 4}
-                y2={18 + (value * (chartHeight - 37)) / 4}
-                className="feed-gridline"
-              />
-            ))}
-            {report === "balance" || report === "capital" ? (
-              <>
-                <line
-                  x1={chartWidth / 2}
-                  x2={chartWidth / 2}
-                  y1="0"
-                  y2={chartHeight}
-                  className="feed-axis"
-                />
-                <rect
-                  x={chartWidth / 2 - 52}
-                  width="51"
-                  y={negativeChart ? 18 : yFor(currentBalance)}
-                  height={Math.max(
-                    1,
-                    Math.abs(
-                      yFor(currentBalance) -
-                        (negativeChart ? 18 : chartHeight - 19),
-                    ),
-                  )}
-                  style={{ fill: "var(--account)" }}
-                />
-              </>
-            ) : (
-              <>
-                {report !== "expense" && report !== "both" && (
-                  <path
-                    d={`${linePath("income")} L ${chartWidth} ${chartHeight - 19} L 0 ${chartHeight - 19} Z`}
-                    style={{ fill: "var(--good)" }}
-                    opacity=".9"
+            <div className="feed-line-region">
+              <div className="feed-chart-ticks">
+                {[4, 3, 2, 1, 0].map((tick, index) => (
+                  <span key={tick}>
+                    {money(((negativeChart ? -index : tick) * maxValue) / 4)}
+                  </span>
+                ))}
+              </div>
+              <svg
+                className="feed-line-chart"
+                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                preserveAspectRatio="none"
+                role="img"
+                aria-label={`График за ${chartMonths} месяца. ${report === "both" ? `Расходы ${money(totalExpense)}, доходы ${money(totalIncome)}` : money(totalValue)}`}
+              >
+                {[0, 1, 2, 3, 4].map((value) => (
+                  <line
+                    key={value}
+                    x1="0"
+                    x2={chartWidth}
+                    y1={18 + (value * (chartHeight - 37)) / 4}
+                    y2={18 + (value * (chartHeight - 37)) / 4}
+                    className="feed-gridline"
                   />
+                ))}
+                {report === "balance" || report === "capital" ? (
+                  <>
+                    <line
+                      x1={chartWidth / 2}
+                      x2={chartWidth / 2}
+                      y1="0"
+                      y2={chartHeight}
+                      className="feed-axis"
+                    />
+                    <rect
+                      x={chartWidth / 2 - 52}
+                      width="51"
+                      y={negativeChart ? 18 : yFor(currentBalance)}
+                      height={Math.max(
+                        1,
+                        Math.abs(
+                          yFor(currentBalance) -
+                            (negativeChart ? 18 : chartHeight - 19),
+                        ),
+                      )}
+                      style={{ fill: "var(--account)" }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {report !== "expense" && report !== "both" && (
+                      <path
+                        d={`${linePath("income")} L ${chartWidth} ${chartHeight - 19} L 0 ${chartHeight - 19} Z`}
+                        style={{ fill: "var(--good)" }}
+                        opacity=".9"
+                      />
+                    )}
+                    {report === "both" && (
+                      <path
+                        d={linePath("income")}
+                        style={{ stroke: "var(--good)" }}
+                        strokeWidth="3.5"
+                        fill="none"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                    {report !== "income" && (
+                      <path
+                        d={linePath("expense")}
+                        style={{ stroke: "var(--bad)" }}
+                        strokeWidth="3.5"
+                        fill="none"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                  </>
                 )}
-                {report === "both" && (
-                  <path
-                    d={linePath("income")}
-                    style={{ stroke: "var(--good)" }}
-                    strokeWidth="3.5"
-                    fill="none"
-                    strokeLinejoin="round"
-                  />
-                )}
-                {report !== "income" && (
-                  <path
-                    d={linePath("expense")}
-                    style={{ stroke: "var(--bad)" }}
-                    strokeWidth="3.5"
-                    fill="none"
-                    strokeLinejoin="round"
-                  />
-                )}
-              </>
-            )}
-          </svg>
-          <div className="feed-chart-zoom">
-            <button
-              aria-label="Увеличить график"
-              disabled={chartMonths <= 2}
-              onClick={() => setChartMonths((value) => Math.max(2, value - 1))}
-            >
-              <Plus size={20} />
-            </button>
-            <button
-              aria-label="Уменьшить график"
-              disabled={chartMonths >= 12}
-              onClick={() => setChartMonths((value) => Math.min(12, value + 1))}
-            >
-              <Minus size={20} />
-            </button>
-          </div>
-          <div className="feed-chart-months">
-            {periods.map((value, index) =>
-              (periods.length - 1 - index) % monthLabelStep === 0 ? (
-                <span key={value}>{shortPeriod(value)}</span>
-              ) : null,
-            )}
-          </div>
-        </div>
-      )}
-      <div className="feed-chart-controls">
-        {(report === "income" || report === "expense") && (
-          <button
-            onClick={() => {
-              setShowAll(!showAll);
-            }}
-          >
-            категории
-          </button>
-        )}
-        <button
-          onClick={() =>
-            chartMode === "donut"
-              ? setShowPercent(!showPercent)
-              : setShowBudget(!showBudget)
-          }
-        >
-          {chartMode === "donut"
-            ? showPercent
-              ? "проценты"
-              : "суммы"
-            : report === "balance" || report === "capital"
-              ? showBudget
-                ? "среднее"
-                : "остаток"
-              : showBudget
-                ? "бюджет"
-                : "без бюджета"}
-        </button>
-        <button onClick={() => setPeriodOpen(!periodOpen)}>ваш период</button>
-      </div>
-      {periodOpen && (
-        <label className="feed-period-input">
-          Выберите месяц
-          <input
-            aria-label="Месяц отчета"
-            type="month"
-            value={period}
-            onChange={(event) => {
-              if (event.target.value) onPeriod(event.target.value);
-            }}
-          />
-        </label>
-      )}
-      <button className="feed-show-all" onClick={() => setShowAll(!showAll)}>
-        {showAll ? "Свернуть" : "Показать все"}
-        <ChevronDown size={18} className={showAll ? "up" : ""} />
-      </button>
-      {report === "both" ? (
-        <div className="feed-summary">
-          <button
-            onClick={() => {
-              setReport("expense");
-            }}
-          >
-            <span className="expense-text">Расходы</span>
-            <ChevronRight size={18} />
-            <small>
-              {showBudget
-                ? money(
-                    state.items
-                      .filter((item) => item.kind === "expense")
-                      .reduce((value, item) => value + item.budget, 0),
-                  )
-                : ""}
-            </small>
-            <strong>{money(totalExpense)}</strong>
-          </button>
-          <button
-            onClick={() => {
-              setReport("income");
-            }}
-          >
-            <span className="income-text">Доходы</span>
-            <ChevronRight size={18} />
-            <small>
-              {showBudget
-                ? money(
-                    state.items
-                      .filter((item) => item.kind === "income")
-                      .reduce((value, item) => value + item.budget, 0),
-                  )
-                : ""}
-            </small>
-            <strong>{money(totalIncome)}</strong>
-          </button>
-        </div>
-      ) : (
-        <div className="feed-total-row">
-          <span>ВСЕГО</span>
-          <small>
-            {chartMode === "donut" && showPercent
-              ? "100%"
-              : report === "balance" || report === "capital"
-                ? money(currentBalance)
-                : showBudget && selectedItem
-                  ? money(selectedItem.budget)
-                  : ""}
-          </small>
-          <strong>{money(totalValue)}</strong>
-        </div>
-      )}
-      {showAll && (
-        <div className="feed-breakdown">
-          {breakdown.map((row, index) => (
-            <button key={row.item.id} onClick={() => chooseFilter(row.item)}>
-              <i
-                style={{ background: chartColors[index % chartColors.length] }}
-              />
-              <span>{row.item.name}</span>
-              <small>
-                {showPercent && breakdownTotal
-                  ? `${Math.round((row.amount / breakdownTotal) * 100)}%`
-                  : ""}
-              </small>
-              <strong>{money(row.amount)}</strong>
-            </button>
-          ))}
-        </div>
-      )}
-      {dates.map((date) => {
-        const dayEntries = visibleEntries.filter(
-          (entry) => entry.date === date,
-        );
-        const net = dailyChange(dayEntries);
-        return (
-          <section className="feed-day" key={date}>
-            <h2>{dateLabel(date)}</h2>
-            {dayEntries.map((entry) => {
-              const source = itemsById.get(entry.sourceId)!;
-              const target = itemsById.get(entry.targetId)!;
-              const positive =
-                isIncome(entry) ||
-                (selectedItem?.kind === "account" &&
-                  entry.targetId === selectedItem.id);
-              const negative =
-                isExpense(entry) ||
-                (selectedItem?.kind === "account" &&
-                  entry.sourceId === selectedItem.id);
-              const tag = [
-                ...entry.tags.map((value) => "#" + value),
-                entry.note,
-              ]
-                .filter(Boolean)
-                .join(" · ");
-              return (
+              </svg>
+              <div className="feed-chart-zoom">
                 <button
-                  key={entry.id}
-                  className="feed-operation"
-                  onClick={() => onSelectEntry(entry)}
+                  aria-label="Увеличить график"
+                  disabled={chartMonths <= 2}
+                  onClick={() => setChartMonths((value) => Math.max(2, value - 1))}
                 >
-                  <div className="feed-operation-names">
-                    <small>{source.name}</small>
-                    <strong>{target.name}</strong>
-                  </div>
-                  <div className="feed-operation-values">
-                    <strong
-                      className={
-                        positive
-                          ? "income-text"
-                          : negative
-                            ? "expense-text"
-                            : ""
-                      }
-                    >
-                      {positive ? "+ " : negative ? "− " : ""}
-                      {money(entry.amount)}
-                    </strong>
-                    {tag && <small>{tag}</small>}
-                  </div>
+                  <Plus size={20} />
                 </button>
-              );
-            })}
-            <div className="feed-day-total">
-              <div>
-                <strong>{compactMoney(balanceAt(date))}</strong>
-                <span>баланс</span>
+                <button
+                  aria-label="Уменьшить график"
+                  disabled={chartMonths >= 12}
+                  onClick={() => setChartMonths((value) => Math.min(12, value + 1))}
+                >
+                  <Minus size={20} />
+                </button>
               </div>
-              <div>
-                <strong className={net >= 0 ? "income-text" : "expense-text"}>
-                  {net < 0 ? "− " : net > 0 ? "+ " : ""}
-                  {money(Math.abs(net))}
-                </strong>
-                <span>всего</span>
+              <div className="feed-chart-months">
+                {periods.map((value, index) =>
+                  (periods.length - 1 - index) % monthLabelStep === 0 ? (
+                    <span key={value}>{shortPeriod(value)}</span>
+                  ) : null,
+                )}
               </div>
             </div>
-          </section>
-        );
-      })}
-      {!visibleEntries.length && (
-        <p className="feed-empty">За этот период операций нет</p>
+          )}
+          <div className="feed-chart-controls">
+            {(report === "income" || report === "expense") && (
+              <button
+                onClick={() => {
+                  setShowAll(!showAll);
+                }}
+              >
+                категории
+              </button>
+            )}
+            <button
+              onClick={() =>
+                chartMode === "donut"
+                  ? setShowPercent(!showPercent)
+                  : setShowBudget(!showBudget)
+              }
+            >
+              {chartMode === "donut"
+                ? showPercent
+                  ? "проценты"
+                  : "суммы"
+                : report === "balance" || report === "capital"
+                  ? showBudget
+                    ? "среднее"
+                    : "остаток"
+                  : showBudget
+                    ? "бюджет"
+                    : "без бюджета"}
+            </button>
+            <button onClick={() => setPeriodOpen(!periodOpen)}>ваш период</button>
+          </div>
+          {periodOpen && (
+            <label className="feed-period-input">
+              Выберите месяц
+              <input
+                aria-label="Месяц отчета"
+                type="month"
+                value={period}
+                onChange={(event) => {
+                  if (event.target.value) onPeriod(event.target.value);
+                }}
+              />
+            </label>
+          )}
+          <button className="feed-show-all" onClick={() => setShowAll(!showAll)}>
+            {showAll ? "Свернуть" : "Показать все"}
+            <ChevronDown size={18} className={showAll ? "up" : ""} />
+          </button>
+          {report === "both" ? (
+            <div className="feed-summary">
+              <button
+                onClick={() => {
+                  setReport("expense");
+                }}
+              >
+                <span className="expense-text">Расходы</span>
+                <ChevronRight size={18} />
+                <small>
+                  {showBudget
+                    ? money(
+                        state.items
+                          .filter((item) => item.kind === "expense")
+                          .reduce((value, item) => value + item.budget, 0),
+                      )
+                    : ""}
+                </small>
+                <strong>{money(totalExpense)}</strong>
+              </button>
+              <button
+                onClick={() => {
+                  setReport("income");
+                }}
+              >
+                <span className="income-text">Доходы</span>
+                <ChevronRight size={18} />
+                <small>
+                  {showBudget
+                    ? money(
+                        state.items
+                          .filter((item) => item.kind === "income")
+                          .reduce((value, item) => value + item.budget, 0),
+                      )
+                    : ""}
+                </small>
+                <strong>{money(totalIncome)}</strong>
+              </button>
+            </div>
+          ) : (
+            <div className="feed-total-row">
+              <span>ВСЕГО</span>
+              <small>
+                {chartMode === "donut" && showPercent
+                  ? "100%"
+                  : report === "balance" || report === "capital"
+                    ? money(currentBalance)
+                    : showBudget && selectedItem
+                      ? money(selectedItem.budget)
+                      : ""}
+              </small>
+              <strong>{money(totalValue)}</strong>
+            </div>
+          )}
+          {showAll && (
+            <div className="feed-breakdown">
+              {breakdown.map((row, index) => (
+                <button key={row.item.id} onClick={() => chooseFilter(row.item)}>
+                  <i
+                    style={{ background: chartColors[index % chartColors.length] }}
+                  />
+                  <span>{row.item.name}</span>
+                  <small>
+                    {showPercent && breakdownTotal
+                      ? `${Math.round((row.amount / breakdownTotal) * 100)}%`
+                      : ""}
+                  </small>
+                  <strong>{money(row.amount)}</strong>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
-      {state.preferences.news && (
-        <section className="feed-news">
-          <h3>Новости Evercoin</h3>
-          <p>
-            Все операции под рукой. Записывайте расходы сразу после покупки.
-          </p>
-        </section>
+      {view === "feed" && (
+        <>
+          {dates.map((date) => {
+            const dayEntries = visibleEntries.filter(
+              (entry) => entry.date === date,
+            );
+            const net = dailyChange(dayEntries);
+            return (
+              <section className="feed-day" key={date}>
+                <h2>{dateLabel(date)}</h2>
+                {dayEntries.map((entry) => {
+                  const source = itemsById.get(entry.sourceId)!;
+                  const target = itemsById.get(entry.targetId)!;
+                  const positive =
+                    isIncome(entry) ||
+                    (selectedItem?.kind === "account" &&
+                      entry.targetId === selectedItem.id);
+                  const negative =
+                    isExpense(entry) ||
+                    (selectedItem?.kind === "account" &&
+                      entry.sourceId === selectedItem.id);
+                  const tag = [
+                    ...entry.tags.map((value) => "#" + value),
+                    entry.note,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+                  return (
+                    <button
+                      key={entry.id}
+                      className="feed-operation"
+                      onClick={() => onSelectEntry(entry)}
+                    >
+                      <div className="feed-operation-names">
+                        <small>{source.name}</small>
+                        <strong>{target.name}</strong>
+                      </div>
+                      <div className="feed-operation-values">
+                        <strong
+                          className={
+                            positive
+                              ? "income-text"
+                              : negative
+                                ? "expense-text"
+                                : ""
+                          }
+                        >
+                          {positive ? "+ " : negative ? "− " : ""}
+                          {money(entry.amount)}
+                        </strong>
+                        {tag && <small>{tag}</small>}
+                      </div>
+                    </button>
+                  );
+                })}
+                <div className="feed-day-total">
+                  <div>
+                    <strong>{compactMoney(balanceAt(date))}</strong>
+                    <span>баланс</span>
+                  </div>
+                  <div>
+                    <strong className={net >= 0 ? "income-text" : "expense-text"}>
+                      {net < 0 ? "− " : net > 0 ? "+ " : ""}
+                      {money(Math.abs(net))}
+                    </strong>
+                    <span>всего</span>
+                  </div>
+                </div>
+              </section>
+            );
+          })}
+          {!visibleEntries.length && (
+            <p className="feed-empty">За этот период операций нет</p>
+          )}
+          {state.preferences.news && (
+            <section className="feed-news">
+              <h3>Новости Evercoin</h3>
+              <p>
+                Все операции под рукой. Записывайте расходы сразу после покупки.
+              </p>
+            </section>
+          )}
+        </>
       )}
       {reportOpen && (
         <div

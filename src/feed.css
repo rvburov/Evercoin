@@ -257,10 +257,10 @@
   display: grid;
   place-items: center;
   font-weight: 400;
-  opacity: 0.85;
 }
 .feed-chart-zoom button:disabled {
-  opacity: 0.35;
+  opacity: 1;
+  color: var(--line-strong);
 }
 .feed-chart-months {
   position: absolute;

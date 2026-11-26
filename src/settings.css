@@ -18,6 +18,9 @@
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
+.settings-group + .settings-group {
+  margin-top: 24px;
+}
 .settings-row {
   display: flex;
   width: 100%;
@@ -66,9 +69,14 @@
   flex-shrink: 0;
 }
 .settings-row-value {
-  flex-shrink: 0;
+  min-width: 0;
   color: var(--fg-3);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings-row-content > span:first-child {
+  flex-shrink: 0;
 }
 .settings-section-title {
   margin: 0;

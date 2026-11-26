@@ -14,6 +14,8 @@ export interface DragState extends DragSource {
   x: number;
   y: number;
 }
+// Зона у края списка расходов, в которой он сам прокручивается при переносе.
+const SCROLL_EDGE = 56;
 export function useFinanceDrag(
   onDraft: (draft: Partial<OperationDraft>) => void,
   notify: (message: string) => void,
@@ -26,6 +28,7 @@ export function useFinanceDrag(
   function beginDrag(event: ReactPointerEvent, source: DragSource) {
     if (event.button !== 0) return;
     cleanupRef.current();
+    let scrollFrame = 0;
     const timer = setTimeout(() => {
       active.current = { ...source, x: event.clientX, y: event.clientY };
       setDrag(active.current);
@@ -33,12 +36,48 @@ export function useFinanceDrag(
     }, 230);
     function cleanup() {
       clearTimeout(timer);
+      cancelAnimationFrame(scrollFrame);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);
       window.removeEventListener("pointercancel", cancel);
       document
         .querySelectorAll(".drop-hover")
         .forEach((element) => element.classList.remove("drop-hover"));
+    }
+    function highlight(x: number, y: number) {
+      document
+        .querySelectorAll(".drop-hover")
+        .forEach((element) => element.classList.remove("drop-hover"));
+      const target = document
+        .elementFromPoint(x, y)
+        ?.closest<HTMLElement>("[data-drop]");
+      if (
+        target?.dataset.drop ===
+        (source.kind === "income" ? "account" : "expense")
+      )
+        target.classList.add("drop-hover");
+    }
+    // Список расходов длиннее экрана: у верхнего и нижнего края он
+    // прокручивается сам, пока палец держит счет.
+    function autoScroll() {
+      scrollFrame = 0;
+      const point = active.current;
+      const area = document.querySelector<HTMLElement>("[data-autoscroll]");
+      if (!point || source.kind !== "account" || !area) return;
+      const box = area.getBoundingClientRect();
+      const visibleBottom =
+        box.bottom - (parseFloat(getComputedStyle(area).paddingBottom) || 0);
+      let step = 0;
+      if (point.y > visibleBottom - SCROLL_EDGE)
+        step = Math.min(14, (point.y - visibleBottom + SCROLL_EDGE) / 5);
+      else if (point.y < box.top + SCROLL_EDGE && point.y > box.top - 40)
+        step = -Math.min(14, (box.top + SCROLL_EDGE - point.y) / 5);
+      if (!step) return;
+      const before = area.scrollTop;
+      area.scrollTop += step;
+      if (area.scrollTop === before) return;
+      highlight(point.x, point.y);
+      scrollFrame = requestAnimationFrame(autoScroll);
     }
     function move(pointer: PointerEvent) {
       if (!active.current) {
@@ -54,17 +93,8 @@ export function useFinanceDrag(
       pointer.preventDefault();
       active.current = { ...source, x: pointer.clientX, y: pointer.clientY };
       setDrag(active.current);
-      document
-        .querySelectorAll(".drop-hover")
-        .forEach((element) => element.classList.remove("drop-hover"));
-      const target = document
-        .elementFromPoint(pointer.clientX, pointer.clientY)
-        ?.closest<HTMLElement>("[data-drop]");
-      if (
-        target?.dataset.drop ===
-        (source.kind === "income" ? "account" : "expense")
-      )
-        target.classList.add("drop-hover");
+      highlight(pointer.clientX, pointer.clientY);
+      if (!scrollFrame) scrollFrame = requestAnimationFrame(autoScroll);
     }
     function cancel() {
       cleanup();
