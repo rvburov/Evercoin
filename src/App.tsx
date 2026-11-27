@@ -11,6 +11,7 @@ import OperationComposer from "./OperationComposer";
 import {
   accountBalance,
   createInitialState,
+  defaultColor,
   defaultDraft,
   loadState,
   newId,
@@ -153,6 +154,10 @@ export default function App() {
       budget: 0,
       included: true,
       goal: false,
+      color: defaultColor(
+        kind,
+        state.items.filter((item) => item.kind === kind).length,
+      ),
     });
   }
   function saveItem(item: FinanceItem, desiredBalance?: number) {
@@ -242,7 +247,13 @@ export default function App() {
       )}
       {(screen === "feed" || screen === "stats") && (
         <Feed
-          key={`${screen}-${filterId || "all"}-${report || "default"}`}
+          /* Лента не пересоздается при смене фильтра: панель поиска
+             остается открытой, шаг листания и свой период сохраняются. */
+          key={
+            screen === "stats"
+              ? `stats-${filterId || "all"}-${report || "default"}`
+              : "feed"
+          }
           view={screen === "stats" ? "stats" : "feed"}
           state={state}
           period={period}
@@ -254,10 +265,6 @@ export default function App() {
           }}
           onPeriod={setPeriod}
           onBack={() => navigate("home")}
-          onEdit={(id) => {
-            const item = state.items.find((item) => item.id === id);
-            if (item) setEditor(item);
-          }}
           onSelectEntry={(entry) =>
             openOperation(
               { ...entry, amount: String(entry.amount / 100) },

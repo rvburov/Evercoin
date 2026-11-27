@@ -32,87 +32,115 @@
   top: 0;
   display: flex;
   align-items: center;
-  height: calc(48px + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) 6px 0;
+  height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 8px 0 6px;
   background: var(--surface);
-  gap: 2px;
+  gap: 4px;
   border-bottom: 1px solid var(--line);
 }
+.view-feed .feed-header {
+  gap: 8px;
+  padding-left: 16px;
+}
+/* Поле поиска: скругленное, с лупой; метка фильтра — в цвете категории. */
 .feed-filter-box {
   flex: 1;
   min-width: 0;
-  height: 29px;
+  height: 36px;
   display: flex;
   align-items: center;
-  background: var(--surface-2);
+  gap: 6px;
   position: relative;
-  padding: 2px 23px 2px 4px;
+  padding: 0 34px 0 36px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.feed-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 10px;
+  width: 16px;
+  height: 16px;
+  color: var(--fg-3);
 }
 .feed-filter-box input {
   border: 0;
   background: transparent;
   width: 100%;
   min-width: 0;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
+  color: var(--fg);
   outline: 0;
 }
 .feed-filter-box input::placeholder {
   color: var(--fg-3);
 }
-.feed-filter-chip {
-  flex-shrink: 0;
-  min-height: 25px;
-  padding: 2px 7px !important;
+.feed-screen .feed-filter-chip {
+  min-width: 0;
+  max-width: 100%;
+  height: 28px;
   display: flex;
-  gap: 14px;
   align-items: center;
-  color: var(--fg) !important;
-  font-size: var(--fs-xs) !important;
-  max-width: calc(100% - 4px);
-  overflow: hidden;
+  gap: 6px;
+  padding: 0 8px 0 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chip, var(--s1)) 16%, var(--surface));
+  color: var(--fg);
+  font-size: var(--fs-sm);
+  font-weight: 500;
   white-space: nowrap;
+}
+.feed-chip-dot {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--chip, var(--s1));
+  color: var(--accent-fg);
+}
+.feed-chip-dot svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.8;
+}
+.feed-chip-name {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
-.feed-filter-chip.income {
-  background: var(--info-soft);
-  color: var(--info-ink) !important;
-}
-.feed-filter-chip.account {
-  background: var(--warn-soft);
-  color: var(--warn-ink) !important;
-}
-.feed-filter-chip.expense {
-  background: var(--bad-soft);
-  color: var(--bad-ink) !important;
-}
-.feed-filter-chip svg {
-  flex-shrink: 0;
-  opacity: 0.7;
+.feed-filter-chip > svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--fg-2);
 }
 .feed-filter-box:has(.feed-filter-chip) input {
   width: 5px;
   flex: 1;
 }
-.feed-clear {
+.feed-screen .feed-clear {
   position: absolute;
-  right: 3px;
-  top: 5px;
-  min-height: 20px;
-  width: 20px;
-  padding: 2px;
+  right: 2px;
+  top: 0;
+  width: 32px;
+  height: 36px;
   display: grid;
   place-items: center;
 }
 .feed-clear svg {
-  background: var(--fg-3);
-  color: white;
+  width: 18px;
+  height: 18px;
+  padding: 3px;
   border-radius: 50%;
-  padding: 1px;
+  background: var(--fg-3);
+  color: var(--surface);
 }
 .feed-filter-panel {
   position: absolute;
   z-index: 15;
-  top: calc(48px + env(safe-area-inset-top));
+  top: calc(56px + env(safe-area-inset-top));
   background: var(--surface);
   box-shadow: 0 10px 20px rgba(16, 21, 17, 0.13);
   max-height: 65dvh;
@@ -148,24 +176,6 @@
 }
 .feed-filter-option > svg:last-child {
   margin-left: auto;
-}
-.feed-edit-row {
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.feed-edit-row button {
-  width: 145px;
-  min-height: 33px;
-  background: var(--surface);
-  border-radius: 11px;
-  box-shadow:
-    0 0 0 1px var(--line-strong),
-    0 1px 2px rgba(16, 21, 17, 0.12);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  color: var(--fg);
 }
 .feed-report-heading {
   background: var(--surface);
@@ -487,99 +497,6 @@
   min-width: 84px;
   text-align: right;
 }
-.feed-day {
-  margin: 0;
-}
-.feed-day h2 {
-  background: var(--bg);
-  font-size: var(--fs-md);
-  font-weight: 500;
-  color: var(--fg);
-  padding: 29px 12px 10px;
-  min-height: 59px;
-  border-bottom: 1px solid var(--line);
-  margin: 0;
-}
-.feed-operation {
-  width: 100%;
-  min-height: 69px;
-  background: var(--surface) !important;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 19px !important;
-  border-bottom: 1px solid var(--line) !important;
-  text-align: left;
-}
-.feed-operation-names {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  max-width: 43%;
-}
-.feed-operation-names > small {
-  font-size: var(--fs-xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.feed-operation-names > strong {
-  font-size: var(--fs-md);
-  font-weight: 400;
-  color: var(--fg);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.feed-operation-values {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  flex-direction: column;
-  gap: 6px;
-}
-.feed-operation-values > strong {
-  font-size: var(--fs-md);
-  font-weight: 500;
-  white-space: nowrap;
-}
-.feed-operation-values > small {
-  max-width: 100%;
-  font-size: var(--fs-2xs);
-  color: var(--fg-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.feed-day-total {
-  background: var(--bg);
-  min-height: 65px;
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 17px;
-}
-.feed-day-total > div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.feed-day-total > div:last-child {
-  align-items: flex-end;
-}
-.feed-day-total > div:first-child {
-  align-items: center;
-}
-.feed-day-total strong {
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  font-weight: 600;
-}
-.feed-day-total span {
-  font-size: var(--fs-xs);
-}
 .feed-empty {
   text-align: center;
   padding: 48px 12px;
@@ -648,9 +565,6 @@
   .feed-chart-controls {
     gap: 7px;
   }
-  .feed-operation {
-    padding-inline: 14px !important;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .feed-show-all svg {
@@ -676,15 +590,587 @@
 .feed-chart-zoom button > svg {
   position: relative;
 }
-.feed-clear {
-  width: 32px;
-  min-height: 40px;
-  top: -5px;
-  right: -3px;
-}
 .feed-chart-controls > button {
   min-height: 40px;
 }
-.feed-filter-chip {
-  min-height: 29px;
+
+/* ---------- Лента ----------
+   Сверху зеленая плашка периода, как сводка на главной. Под ней поиск
+   и календарь. День: дата, операции и строка из четырех ячеек. */
+.feed-plate {
+  padding: calc(6px + env(safe-area-inset-top)) 8px 10px;
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.feed-plate-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+}
+.feed-screen .feed-plate-row > button {
+  width: 40px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-fg);
+}
+.feed-screen .feed-plate-row > .feed-plate-title {
+  width: auto;
+  min-width: 150px;
+  max-width: calc(100% - 96px);
+  padding: 0 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.feed-plate-sums {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 4px;
+  text-align: center;
+}
+.feed-plate-sums small {
+  display: block;
+  font-size: var(--fs-2xs);
+  line-height: 14px;
+  color: color-mix(in srgb, var(--accent-fg) 80%, var(--accent));
+}
+.feed-plate-sums b {
+  display: block;
+  font-size: var(--fs-sm);
+  line-height: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.feed-day {
+  margin: 0;
+}
+.feed-day h2 {
+  padding: 18px 16px 8px;
+  background: var(--bg);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fg);
+}
+.feed-screen .feed-operation {
+  position: relative;
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  text-align: left;
+}
+.feed-operation + .feed-operation::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 64px;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+}
+/* Круг операции: расходы серые, доходы синие, счета желтые. */
+.feed-op-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--fg-2);
+}
+.feed-op-icon.is-income {
+  background: var(--income);
+  color: var(--accent-fg);
+}
+.feed-op-icon.is-account {
+  background: var(--account);
+  color: var(--accent-fg);
+}
+.feed-op-icon svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.4;
+}
+.feed-operation-names {
+  min-width: 0;
+  max-width: 55%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.feed-operation-names > strong,
+.feed-operation-names > small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.feed-operation-names > strong {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--fg);
+}
+.feed-operation-names > small {
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+  color: var(--fg-3);
+}
+.feed-operation-values {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.feed-operation-values > strong {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.feed-operation-values > small {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+  color: var(--fg-3);
+}
+.feed-day-total {
+  display: flex;
+  padding: 10px 8px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.feed-day-total > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.feed-day-total > span + span {
+  border-left: 1px solid var(--line);
+}
+.feed-day-total small {
+  font-size: var(--fs-2xs);
+  line-height: 14px;
+  color: var(--fg-3);
+}
+.feed-day-total b {
+  font-size: var(--fs-sm);
+  line-height: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.feed-screen .balance-text {
+  color: var(--warn-ink);
+}
+.feed-screen .zero-text {
+  color: var(--fg-3);
+}
+
+/* ---------- Панель поиска ----------
+   Выезжает под строкой поиска: тип, категория, счет и сумма. */
+.feed-search-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  background: color-mix(in srgb, var(--fg) 24%, transparent);
+}
+.feed-search {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 62dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 2px 16px 0;
+  border-radius: 0 0 18px 18px;
+  background: var(--surface);
+  box-shadow: 0 18px 32px -16px rgba(16, 21, 17, 0.35);
+}
+.feed-search-label {
+  margin: 14px 0 6px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--fg-3);
+}
+.feed-search-types {
+  display: flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.feed-screen .feed-search-types > button {
+  flex: 1;
+  height: 32px;
+  border-radius: 9px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--fg-2);
+}
+.feed-screen .feed-search-types > button.is-on {
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(16, 21, 17, 0.14);
+}
+.feed-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.feed-screen .feed-search-chip {
+  height: 32px;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 0 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--fg);
+  font-size: var(--fs-sm);
+}
+.feed-search-chip > i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--chip);
+}
+.feed-screen .feed-search-chip.is-on {
+  background: color-mix(in srgb, var(--chip) 18%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px var(--chip);
+  font-weight: 600;
+}
+.feed-screen .feed-search-chip.is-more {
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+.feed-search-empty {
+  font-size: var(--fs-sm);
+  color: var(--fg-3);
+}
+.feed-search-amounts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-3);
+}
+.feed-screen .feed-search-amounts input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: var(--fs-md);
+  color: var(--fg);
+}
+.feed-screen .feed-search-amounts input:focus {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+/* Кнопки панели всегда видны внизу. */
+.feed-search-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  margin: 14px -16px 0;
+  padding: 10px 16px 14px;
+  background: var(--surface);
+  box-shadow: 0 -1px 0 var(--line);
+}
+.feed-screen .feed-search-reset {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  color: var(--fg-2);
+  font-weight: 500;
+}
+.feed-screen .feed-search-apply {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+/* ---------- Окна «Период» и «Листать по» ----------
+   Без крестика: закрываются выбором, свайпом вниз или нажатием вне окна. */
+.feed-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--overlay);
+}
+.feed-sheet {
+  width: min(100%, 480px);
+  max-height: 88dvh;
+  overflow: auto;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  box-shadow: 0 -8px 24px rgba(16, 21, 17, 0.12);
+  transition: transform 0.2s ease;
+}
+.feed-sheet-grip {
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 8px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  touch-action: none;
+}
+.feed-sheet-title {
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 34px;
+  color: var(--fg);
+  touch-action: none;
+}
+.feed-screen .feed-sheet-primary {
+  width: 100%;
+  height: 48px;
+  margin-top: 14px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.feed-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+}
+.feed-screen .feed-cal-nav > button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-2);
+}
+.feed-cal-nav strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--fg);
+}
+.feed-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  row-gap: 4px;
+}
+.feed-cal-weekday {
+  height: 22px;
+  font-size: var(--fs-2xs);
+  line-height: 22px;
+  text-align: center;
+  color: var(--fg-3);
+}
+.feed-screen .feed-cal-day {
+  height: 38px;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-sm);
+  color: var(--fg);
+}
+.feed-cal-day b {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 500;
+}
+.feed-screen .feed-cal-day.in {
+  background: var(--accent-soft);
+}
+.feed-screen .feed-cal-day.in.row-start {
+  border-radius: 19px 0 0 19px;
+}
+.feed-screen .feed-cal-day.in.row-end {
+  border-radius: 0 19px 19px 0;
+}
+/* Начало и конец: полоса идет только внутрь периода, без обрубков. */
+.feed-screen .feed-cal-day.in.start,
+.feed-screen .feed-cal-day.in.end {
+  border-radius: 0;
+}
+.feed-screen .feed-cal-day.in.start {
+  background: linear-gradient(to right, transparent 50%, var(--accent-soft) 50%);
+}
+.feed-screen .feed-cal-day.in.end {
+  background: linear-gradient(to left, transparent 50%, var(--accent-soft) 50%);
+}
+.feed-screen .feed-cal-day.in.start.end,
+.feed-screen .feed-cal-day.in.start.row-end,
+.feed-screen .feed-cal-day.in.end.row-start {
+  background: transparent;
+}
+/* Период уходит в соседний месяц — полоса плавно тает у края. */
+.feed-screen .feed-cal-day.in.cont-right:not(.start) {
+  background: linear-gradient(to right, var(--accent-soft) 55%, transparent);
+}
+.feed-screen .feed-cal-day.in.cont-left:not(.end) {
+  background: linear-gradient(to left, var(--accent-soft) 55%, transparent);
+}
+.feed-cal-day.start b,
+.feed-cal-day.end b {
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+.feed-cal-day.today b {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  font-weight: 600;
+}
+.feed-cal-day:focus-visible {
+  outline: 0;
+}
+.feed-cal-day:focus-visible b {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+/* Поля дат: цифры по центру, точки шаблона дд.мм.гггг видны сразу. */
+.feed-dates {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  color: var(--fg-3);
+}
+.feed-date {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  cursor: text;
+}
+.feed-date:focus-within,
+.feed-date.is-next {
+  background: color-mix(in srgb, var(--accent-soft) 50%, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.feed-date-box {
+  position: relative;
+  display: block;
+  padding-right: 2px;
+}
+.feed-date-size,
+.feed-date-ghost,
+.feed-screen .feed-date input {
+  font-family: var(--font-body);
+  font-size: var(--fs-lg);
+  line-height: 24px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+}
+.feed-date-size {
+  display: block;
+  font-weight: 600;
+  visibility: hidden;
+}
+.feed-date-ghost,
+.feed-screen .feed-date input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 24px;
+}
+.feed-date-ghost {
+  font-weight: 400;
+  color: color-mix(in srgb, var(--fg-3) 70%, var(--surface));
+  pointer-events: none;
+}
+.feed-date-ghost > span {
+  font-weight: 600;
+  color: transparent;
+}
+.feed-screen .feed-date input {
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-weight: 600;
+  color: var(--fg);
+  caret-color: var(--accent);
+}
+.feed-steps {
+  display: grid;
+  gap: 8px;
+}
+.feed-screen .feed-steps > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  text-align: left;
+}
+.feed-screen .feed-steps > button.is-on {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.feed-step-radio {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+}
+.is-on > .feed-step-radio {
+  background: var(--accent);
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    inset 0 0 0 6px var(--surface);
+}
+.feed-steps strong {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--fg);
+}
+.feed-steps small {
+  font-size: var(--fs-xs);
+  color: var(--fg-3);
 }

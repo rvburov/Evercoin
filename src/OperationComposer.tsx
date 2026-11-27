@@ -47,15 +47,10 @@ export default function OperationComposer({
   const [operator, setOperator] = useState<string | null>(null);
   const source = state.items.find((item) => item.id === draft.sourceId);
   const target = state.items.find((item) => item.id === draft.targetId);
-  const tags = [
-    "Алкоголь «Продукты»",
-    "Бизнес ланч «Кафе и рестораны»",
-    "Продукты первой необходимости",
-    "Здоровье и красота",
-    "Хостинг «Программы»",
-    "Claude «Программы»",
-    "Тинькоф",
-  ];
+  // Метки — из уже записанных операций, встроенных подкатегорий нет.
+  const tags = Array.from(
+    new Set(state.entries.flatMap((entry) => entry.tags)),
+  );
   const [customTag, setCustomTag] = useState("");
   const availableTags = Array.from(new Set([...tags, ...draft.tags]));
   function updateAmount(value: string) {

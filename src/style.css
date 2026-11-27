@@ -243,7 +243,7 @@ svg {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--surface);
 }
 @media (max-height: 700px) {
   .home-screen {
@@ -255,14 +255,15 @@ svg {
   --value-lh: 16px;
   --budget-lh: 14px;
 }
-/* Сводка: подписи и суммы в том же виде, что у плиток ниже. */
+/* Четыре поля разделены цветом, без линий: сводка на зеленой плашке,
+   доходы на голубом, счета на кремовом, расходы на белом. Подписи и суммы
+   сводки в том же виде, что у плиток ниже. */
 .overview-header {
   height: var(--head-h);
   flex: none;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  background: var(--accent);
 }
 .overview-header > button {
   min-width: 0;
@@ -283,13 +284,13 @@ svg {
 .overview-header > button > span {
   font-size: var(--fs-2xs);
   line-height: var(--name-lh);
-  color: var(--fg-2);
+  color: color-mix(in srgb, var(--accent-fg) 80%, var(--accent));
 }
 .overview-header strong {
   font-size: var(--fs-xs);
   line-height: var(--value-lh);
   font-weight: 500;
-  color: var(--fg);
+  color: var(--accent-fg);
 }
 .large-fonts .overview-header > button > span {
   font-size: var(--fs-xs);
@@ -303,10 +304,12 @@ svg {
   flex: none;
   height: calc(var(--c) + var(--text-h) + 18px);
   padding: 8px 0 10px;
-  border-bottom: 1px solid var(--line);
 }
 .income-band {
-  background: var(--surface);
+  background: color-mix(in srgb, var(--info-soft) 55%, var(--surface));
+}
+.account-band {
+  background: color-mix(in srgb, var(--warn-soft) 60%, var(--surface));
 }
 .item-grid {
   display: grid;
@@ -715,7 +718,14 @@ svg {
   right: 0;
   top: 18px;
   bottom: calc(-1 * var(--nav-bottom));
-  background: linear-gradient(to bottom, transparent, var(--bg) 26px);
+  background: linear-gradient(to bottom, transparent, var(--nav-fade) 26px);
+}
+/* Фон под меню — как у экрана: на главной расходы на белом. */
+.app-shell {
+  --nav-fade: var(--bg);
+}
+.app-shell:has(.home-screen) {
+  --nav-fade: var(--surface);
 }
 .bottom-nav-shape {
   position: absolute;

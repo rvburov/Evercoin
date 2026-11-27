@@ -99,6 +99,8 @@ export interface FinanceItem {
   included: boolean;
   goal: boolean;
   archived?: boolean;
+  // Цвет из палитры CATEGORY_COLORS: метка фильтра и панель поиска.
+  color?: string;
 }
 export interface RepeatRule {
   every: number;
@@ -252,15 +254,22 @@ export const monthLabel = (period: string) =>
   new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" })
     .format(new Date(period + "-15T12:00:00"))
     .replace(" г.", "");
-export const dateLabel = (date: string) =>
-  (date === today ? "СЕГОДНЯ, " : "") +
-  new Intl.DateTimeFormat("ru-RU", {
+export function dateLabel(date: string): string {
+  const label = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
     month: "long",
-    year: "numeric",
+    ...(date.slice(0, 4) === today.slice(0, 4)
+      ? {}
+      : { year: "numeric" as const }),
   })
     .format(new Date(date + "T12:00:00"))
     .replace(" г.", "");
+  const yesterday = new Date(today + "T12:00:00Z");
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  if (date === today) return "Сегодня, " + label;
+  if (date === yesterday.toISOString().slice(0, 10)) return "Вчера, " + label;
+  return label;
+}
 export function isValidDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(value + "T12:00:00Z");
@@ -370,6 +379,31 @@ const expenseItems: Array<[string, string, string, number, number]> = [
   ["credit", "Кредит %", "calculator", 13900, 3100],
   ["tax", "Налоги", "percent", 820, 0],
 ];
+// Палитра цветов категорий. Выбор цвета появится в настройках категории.
+export const CATEGORY_COLORS = [
+  "s1",
+  "s2",
+  "s3",
+  "s4",
+  "s5",
+  "s6",
+  "s7",
+  "s8",
+  "brown",
+  "graphite",
+];
+export function colorCss(color?: string): string {
+  if (color === "brown") return "var(--warn-ink)";
+  if (color === "graphite") return "var(--fg-2)";
+  return `var(--${color && /^s[1-8]$/.test(color) ? color : "s1"})`;
+}
+// Цвет новой категории: доходы синие, счета желтые, расходы по кругу палитры.
+export function defaultColor(kind: ItemKind, index: number): string {
+  if (kind === "income") return "s1";
+  if (kind === "account") return "s4";
+  const order = ["s3", "s2", "s7", "s1", "s5", "s6", "s8", "s4", "brown", "graphite"];
+  return order[index % order.length];
+}
 export function createInitialState(): FinanceState {
   const items: FinanceItem[] = [
     ...incomeItems.map(([id, name, icon, budget]) => ({
@@ -381,6 +415,7 @@ export function createInitialState(): FinanceState {
       opening: 0,
       included: true,
       goal: false,
+      color: defaultColor("income", 0),
     })),
     ...accountItems.map(([id, name, icon, balance]) => ({
       id,
@@ -391,8 +426,9 @@ export function createInitialState(): FinanceState {
       opening: balance * 100,
       included: true,
       goal: false,
+      color: defaultColor("account", 0),
     })),
-    ...expenseItems.map(([id, name, icon, , budget]) => ({
+    ...expenseItems.map(([id, name, icon, , budget], index) => ({
       id,
       name,
       icon,
@@ -401,6 +437,7 @@ export function createInitialState(): FinanceState {
       opening: 0,
       included: true,
       goal: false,
+      color: defaultColor("expense", index),
     })),
   ];
   const expenseEntry = (
@@ -421,29 +458,17 @@ export function createInitialState(): FinanceState {
     repeat: null,
   });
   const entries: Entry[] = [
-    expenseEntry("e1", "programs", 1190, today, "", ["Хостинг «Программы»"]),
-    expenseEntry("e2", "cafe", 370, today, "", [
-      "Бизнес ланч «Кафе и рестораны»",
-    ]),
-    expenseEntry("e3", "cafe", 660, today, "", [
-      "Бизнес ланч «Кафе и рестораны»",
-    ]),
-    expenseEntry("e4", "programs", 3000, "2026-11-24", "", [
-      "Claude «Программы»",
-    ]),
+    expenseEntry("e1", "programs", 1190, today),
+    expenseEntry("e2", "cafe", 370, today),
+    expenseEntry("e3", "cafe", 660, today),
+    expenseEntry("e4", "programs", 3000, "2026-11-24"),
     expenseEntry("e5", "fuel", 2940, "2026-11-24"),
-    expenseEntry("e6", "cafe", 1820, "2026-11-24", "", [
-      "Бизнес ланч «Кафе и рестораны»",
-    ]),
+    expenseEntry("e6", "cafe", 1820, "2026-11-24"),
     expenseEntry("e7", "cafe", 640, "2026-11-23"),
     expenseEntry("e8", "cafe", 380, "2026-11-23"),
-    expenseEntry("e9", "polina", 1000, "2026-11-22", "", [
-      "Здоровье и красота",
-    ]),
-    expenseEntry("e10", "credit", 500, "2026-11-22", "", ["Тинькоф"]),
-    expenseEntry("e11", "food", 2280, "2026-11-22", "", [
-      "Продукты первой необходимости",
-    ]),
+    expenseEntry("e9", "polina", 1000, "2026-11-22"),
+    expenseEntry("e10", "credit", 500, "2026-11-22"),
+    expenseEntry("e11", "food", 2280, "2026-11-22"),
   ];
   for (const [id, , , amount] of expenseItems) {
     const remainder = amount * 100 - itemTotal(id, entries);
@@ -468,7 +493,7 @@ export function createInitialState(): FinanceState {
     sourceId: "bonus",
     targetId: "sber",
     amount: 2500000,
-    date: "2026-11-13",
+    date: today,
     note: "",
     tags: [],
     repeat: null,
@@ -543,7 +568,7 @@ export function createInitialState(): FinanceState {
     profileName: "romanburov89@gmail.com",
   };
 }
-const storageKey = "evercoin-screenshot-mockup-v2";
+const storageKey = "evercoin-screenshot-mockup-v3";
 export function loadState(): FinanceState {
   try {
     const value: unknown = JSON.parse(
